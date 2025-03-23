@@ -1,234 +1,131 @@
+
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Hero } from '@/components/Hero';
-import { RestaurantCard } from '@/components/RestaurantCard';
-import { FoodCard } from '@/components/FoodCard';
-import { ArrowRight, Clock, Leaf, ThumbsUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/lib/toast';
+import { FoodCard } from '@/components/FoodCard';
+import { RestaurantCard } from '@/components/RestaurantCard';
 
-// Mock data
-const featuredRestaurants = [
+// Categorias
+const categories = [
+  {
+    id: 'restaurants',
+    name: 'Restaurantes',
+    icon: (
+      <div className="bg-orange-500 rounded-lg p-3 w-16 h-16 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
+          <path d="M2.97 1.35A1 1 0 0 1 3.73 1h8.54a1 1 0 0 1 .76.35l2.609 3.044A1.5 1.5 0 0 1 16 5.37v.255a2.375 2.375 0 0 1-4.25 1.458A2.371 2.371 0 0 1 9.875 8 2.37 2.37 0 0 1 8 7.083 2.37 2.37 0 0 1 6.125 8a2.37 2.37 0 0 1-1.875-.917A2.375 2.375 0 0 1 0 5.625V5.37a1.5 1.5 0 0 1 .361-.976l2.61-3.045zm1.78 4.275a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 1 0 2.75 0V5.37a.5.5 0 0 0-.12-.325L12.27 2H3.73L1.12 5.045A.5.5 0 0 0 1 5.37v.255a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0zM1.5 8.5A.5.5 0 0 1 2 9v6h12V9a.5.5 0 0 1 1 0v6h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1V9a.5.5 0 0 1 .5-.5zm2 .5a.5.5 0 0 1 .5.5V13h8V9.5a.5.5 0 0 1 1 0V13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a.5.5 0 0 1 .5-.5z"/>
+        </svg>
+      </div>
+    ),
+    link: '/restaurants'
+  },
+  {
+    id: 'desserts',
+    name: 'Sobremesa',
+    icon: (
+      <div className="bg-pink-500 rounded-lg p-3 w-16 h-16 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
+          <path d="M6 1a1.5 1.5 0 0 0-1.5 1.5H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1.5A1.5 1.5 0 0 0 10 1H6ZM5 3h6a1 1 0 0 1 1 1v1.5H4V4a1 1 0 0 1 1-1Zm7 6.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5ZM8 8v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5Zm-3 0v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5Zm8 1.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5ZM8 11v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5Zm-3 0v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5Z"/>
+        </svg>
+      </div>
+    ),
+    link: '/desserts'
+  }
+];
+
+// Restaurantes de sobremesa
+const dessertRestaurants = [
   {
     id: '1',
-    name: 'Burger Heaven',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'American, Burgers',
-    rating: 4.8,
-    deliveryTime: '15-25 min',
-    minOrder: '$15',
+    name: 'Doce Paixão',
+    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Doces e Bolos',
+    rating: 4.9,
+    deliveryTime: '20-35 min',
+    minOrder: 'R$5,90',
     featured: true,
   },
   {
     id: '2',
-    name: 'Pasta Paradise',
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Italian, Pasta',
+    name: 'Gelato Italiano',
+    image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Sorvetes e Gelatos',
+    rating: 4.6,
+    deliveryTime: '15-30 min',
+    minOrder: 'R$6,50',
+  },
+  {
+    id: '3',
+    name: 'Confeitaria Doce Sonho',
+    image: 'https://images.unsplash.com/photo-1574085733277-851d9d856a3a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Doces e Confeitaria',
+    rating: 4.8,
+    deliveryTime: '25-40 min',
+    minOrder: 'R$7,50',
+  },
+  {
+    id: '4',
+    name: 'Açaí Tropical',
+    image: 'https://images.unsplash.com/photo-1502825751399-28baa9b81995?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Açaí e Smoothies',
     rating: 4.7,
-    deliveryTime: '25-35 min',
-    minOrder: '$20',
-  },
-  {
-    id: '3',
-    name: 'Sushi Sensation',
-    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Japanese, Sushi',
-    rating: 4.9,
-    deliveryTime: '30-40 min',
-    minOrder: '$25',
-  },
-];
-
-const popularFoods = [
-  {
-    id: '1',
-    restaurantId: '1',
-    name: 'Legendary Burger',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    description: 'Angus beef patty, special sauce, lettuce, cheese, pickles, onions on a brioche bun',
-    price: '$12.99',
-    popular: true,
-  },
-  {
-    id: '2',
-    restaurantId: '3',
-    name: 'Dragon Roll',
-    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    description: 'Eel, cucumber, avocado, topped with thinly sliced avocado and sweet sauce',
-    price: '$15.99',
-    popular: true,
-  },
-  {
-    id: '3',
-    restaurantId: '2',
-    name: 'Fettuccine Alfredo',
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    description: 'Fresh fettuccine tossed with butter and Parmesan cheese',
-    price: '$14.99',
-    popular: true,
+    deliveryTime: '20-35 min',
+    minOrder: 'R$5,50',
   },
 ];
 
 const Index: React.FC = () => {
-  const handleAddToCart = () => {
-    toast.success('Item added to cart!');
-  };
-
   return (
     <Layout>
-      {/* Hero Section */}
-      <Hero />
-      
-      {/* Features Section */}
-      <section className="section-padding bg-secondary/50">
+      <div className="pt-20 pb-16">
         <div className="page-container">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-card p-6 rounded-xl border border-border shadow-sm flex flex-col items-center text-center animate-fade-in">
-              <div className="h-14 w-14 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4">
-                <Clock size={28} />
-              </div>
-              <h3 className="font-medium text-xl mb-2">Fast Delivery</h3>
-              <p className="text-muted-foreground">
-                Get your food delivered in under 30 minutes, or the delivery is free.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-xl border border-border shadow-sm flex flex-col items-center text-center animate-fade-in delay-100">
-              <div className="h-14 w-14 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4">
-                <Leaf size={28} />
-              </div>
-              <h3 className="font-medium text-xl mb-2">Fresh Food</h3>
-              <p className="text-muted-foreground">
-                We only work with the best restaurants that use fresh ingredients.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-xl border border-border shadow-sm flex flex-col items-center text-center animate-fade-in delay-200">
-              <div className="h-14 w-14 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-4">
-                <ThumbsUp size={28} />
-              </div>
-              <h3 className="font-medium text-xl mb-2">Quality Service</h3>
-              <p className="text-muted-foreground">
-                Dedicated customer support to assist you with any concerns.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Featured Restaurants Section */}
-      <section className="section-padding">
-        <div className="page-container">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="heading-lg mb-2">Featured Restaurants</h2>
-              <p className="text-muted-foreground">
-                Discover the best restaurants in your area
-              </p>
-            </div>
-            
-            <Link to="/restaurants">
-              <Button variant="ghost" className="flex items-center gap-1">
-                <span>View All</span>
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {featuredRestaurants.map((restaurant) => (
-              <RestaurantCard
-                key={restaurant.id}
-                id={restaurant.id}
-                name={restaurant.name}
-                image={restaurant.image}
-                cuisine={restaurant.cuisine}
-                rating={restaurant.rating}
-                deliveryTime={restaurant.deliveryTime}
-                minOrder={restaurant.minOrder}
-                featured={restaurant.featured}
-              />
+          {/* Categories */}
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-8">
+            {categories.map((category) => (
+              <Link 
+                key={category.id}
+                to={category.link}
+                className="flex flex-col items-center"
+              >
+                {category.icon}
+                <span className="mt-2 text-sm">{category.name}</span>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
-      
-      {/* Popular Food Section */}
-      <section className="section-padding bg-muted/50">
-        <div className="page-container">
-          <div className="text-center mb-10">
-            <h2 className="heading-lg mb-4">Popular Right Now</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              The most ordered items and dishes from top restaurants
-            </p>
-          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {popularFoods.map((food) => (
-              <FoodCard
-                key={food.id}
-                id={food.id}
-                restaurantId={food.restaurantId}
-                name={food.name}
-                image={food.image}
-                description={food.description}
-                price={food.price}
-                popular={food.popular}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* App Download Section */}
-      <section className="section-padding bg-accent/5">
-        <div className="page-container">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="space-y-6 animate-slide-up">
-              <div className="inline-block bg-accent/10 text-accent px-3 py-1 rounded-full text-sm font-medium">
-                Download Our App
-              </div>
-              
-              <h2 className="heading-lg">
-                Get the Full Experience on Your Mobile
-              </h2>
-              
-              <p className="text-muted-foreground">
-                Order food, track your delivery in real-time, and receive exclusive app-only offers.
-                Download the LegendaryFood app today!
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <Button 
-                  size="lg" 
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  App Store
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                >
-                  Google Play
-                </Button>
-              </div>
-            </div>
+          {/* Sobremesa Section */}
+          <section>
+            <h2 className="text-xl font-bold mb-6">Sobremesa</h2>
             
-            <div className="relative max-w-md mx-auto">
-              <div className="relative z-10 animate-slide-up">
-                <img
-                  src="https://images.unsplash.com/photo-1592832122594-caa13e6ee76f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80"
-                  alt="Mobile app"
-                  className="rounded-xl shadow-xl"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full bg-accent/10 rounded-xl"></div>
+            <div className="grid grid-cols-1 gap-4">
+              {dessertRestaurants.map((restaurant) => (
+                <Link key={restaurant.id} to={`/restaurants/${restaurant.id}`} className="block">
+                  <div className="flex items-center border rounded-lg overflow-hidden bg-white">
+                    <div className="w-20 h-20 bg-gray-200">
+                      <img 
+                        src={restaurant.image} 
+                        alt={restaurant.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 p-3">
+                      <h3 className="font-medium">{restaurant.name}</h3>
+                      <div className="flex items-center text-yellow-500 text-sm">
+                        <span className="mr-1">★</span>
+                        <span>{restaurant.rating}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-500 mt-1">
+                        <span>{restaurant.deliveryTime}</span>
+                        <span>{restaurant.minOrder}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
-          </div>
+          </section>
         </div>
-      </section>
+      </div>
     </Layout>
   );
 };
