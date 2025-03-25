@@ -126,7 +126,6 @@ const ConfirmOrder: React.FC = () => {
           <div className="mb-6">
             <Link
               to={`/restaurants/${order.restaurantId}`}
-              state={{ from: location.pathname }}
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronLeft size={16} className="mr-1" />

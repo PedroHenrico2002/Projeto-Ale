@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CheckCircle2, Clock, MapPin, Truck, Bike, Star, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,6 +13,7 @@ interface OrderTrackerProps {
   className?: string;
   simplified?: boolean;
   onRate?: (rating: number) => void;
+  currentRating?: number;
 }
 
 export const OrderTracker: React.FC<OrderTrackerProps> = ({
@@ -21,7 +21,8 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({
   estimatedDelivery,
   className,
   simplified = false,
-  onRate
+  onRate,
+  currentRating = 0
 }) => {
   const steps = [
     { key: 'preparing', label: 'Preparando', icon: Clock },
@@ -103,9 +104,17 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({
                     <button
                       key={star}
                       onClick={() => onRate(star)}
-                      className="text-gray-300 hover:text-yellow-400 transition-colors"
+                      className={`transition-colors ${
+                        star <= currentRating 
+                          ? "text-yellow-400" 
+                          : "text-gray-300 hover:text-yellow-400"
+                      }`}
                     >
-                      <Star size={24} className="cursor-pointer" />
+                      <Star 
+                        size={24} 
+                        className="cursor-pointer" 
+                        fill={star <= currentRating ? "currentColor" : "none"} 
+                      />
                     </button>
                   ))}
                 </div>

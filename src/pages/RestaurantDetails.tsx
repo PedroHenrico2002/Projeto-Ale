@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, ShoppingCart, ChevronLeft, Star } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, ChevronLeft, Star, AlertCircle } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { PaymentMethods, PaymentMethod, CardDetails } from '@/components/PaymentMethods';
 
@@ -200,6 +201,7 @@ const RestaurantDetails: React.FC = () => {
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('credit');
   const [selectedCard, setSelectedCard] = useState<CardDetails | null>(null);
+  const [isFormValid, setIsFormValid] = useState(false);
   
   const restaurant = restaurantId ? restaurantsData[restaurantId as keyof typeof restaurantsData] : null;
   
@@ -207,6 +209,15 @@ const RestaurantDetails: React.FC = () => {
     const newTotal = cartItems.reduce((sum, item) => sum + (item.priceValue * item.quantity), 0);
     setTotalValue(newTotal);
   }, [cartItems]);
+
+  // Validate if the form is complete based on payment method
+  useEffect(() => {
+    if (selectedPayment === 'cash') {
+      setIsFormValid(true);
+    } else {
+      setIsFormValid(!!selectedCard);
+    }
+  }, [selectedPayment, selectedCard]);
   
   const handleBack = () => {
     if (location.state && location.state.from) {
@@ -291,6 +302,13 @@ const RestaurantDetails: React.FC = () => {
   };
   
   const handleConfirmOrder = () => {
+    if (!isFormValid) {
+      if (selectedPayment !== 'cash') {
+        toast.error('Adicione um cartão para continuar');
+      }
+      return;
+    }
+    
     sessionStorage.setItem('currentOrder', JSON.stringify({
       restaurantName: restaurant.name,
       restaurantId: restaurant.id,
@@ -445,6 +463,13 @@ const RestaurantDetails: React.FC = () => {
                           />
                         </div>
                         
+                        {!isFormValid && selectedPayment !== 'cash' && (
+                          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-start gap-2">
+                            <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <span>Adicione um cartão para continuar com o pedido</span>
+                          </div>
+                        )}
+                        
                         <div className="border-t pt-3 mt-3">
                           <div className="flex justify-between items-center mb-2">
                             <span>Forma de pagamento</span>
@@ -473,6 +498,7 @@ const RestaurantDetails: React.FC = () => {
                           <Button 
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                             onClick={handleConfirmOrder}
+                            disabled={!isFormValid}
                           >
                             Confirmar Pedido
                           </Button>

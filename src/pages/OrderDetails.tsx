@@ -1,11 +1,13 @@
+
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { OrderTracker } from '@/components/OrderTracker';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, CreditCard, DollarSign, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { PaymentMethod } from '@/components/PaymentMethods';
 
 interface OrderItem {
   id: string;
@@ -24,6 +26,11 @@ interface OrderDetails {
   estimatedDelivery: string;
   address: string;
   status: 'preparing' | 'ready' | 'delivering' | 'delivered';
+  paymentMethod: PaymentMethod;
+  paymentDetails?: {
+    number: string;
+    name: string;
+  } | null;
 }
 
 const OrderDetails: React.FC = () => {
@@ -31,6 +38,7 @@ const OrderDetails: React.FC = () => {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [status, setStatus] = useState<'preparing' | 'ready' | 'delivering' | 'delivered'>('preparing');
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [rating, setRating] = useState(0);
   
   useEffect(() => {
     const orderData = sessionStorage.getItem('orderDetails');
@@ -53,6 +61,11 @@ const OrderDetails: React.FC = () => {
           parsedOrder.address = formattedAddress;
           sessionStorage.setItem('orderDetails', JSON.stringify(parsedOrder));
         }
+      }
+      
+      // Check if there's a saved rating
+      if (parsedOrder.rating) {
+        setRating(parsedOrder.rating);
       }
       
       setOrderDetails(parsedOrder);
@@ -98,6 +111,7 @@ const OrderDetails: React.FC = () => {
   }, [orderDetails]);
   
   const handleRating = (rating: number) => {
+    setRating(rating);
     toast.success(`Obrigado por avaliar o restaurante com ${rating} estrelas!`);
     
     // Salvar avaliação no storage
@@ -108,6 +122,35 @@ const OrderDetails: React.FC = () => {
         status: 'delivered'
       };
       sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
+    }
+  };
+
+  const getPaymentMethodIcon = (method: PaymentMethod) => {
+    switch (method) {
+      case 'credit':
+      case 'debit':
+        return <CreditCard className="text-gray-500 mt-1" size={18} />;
+      case 'meal':
+        return <DollarSign className="text-gray-500 mt-1" size={18} />;
+      case 'cash':
+        return <Truck className="text-gray-500 mt-1" size={18} />;
+      default:
+        return <CreditCard className="text-gray-500 mt-1" size={18} />;
+    }
+  };
+  
+  const getPaymentMethodName = (method: PaymentMethod) => {
+    switch (method) {
+      case 'credit':
+        return 'Cartão de Crédito';
+      case 'debit':
+        return 'Cartão de Débito';
+      case 'meal':
+        return 'Vale Refeição';
+      case 'cash':
+        return 'Pagamento na Entrega';
+      default:
+        return 'Cartão de Crédito';
     }
   };
   
@@ -142,6 +185,7 @@ const OrderDetails: React.FC = () => {
               estimatedDelivery={orderDetails.estimatedDelivery}
               simplified={true}
               onRate={handleRating}
+              currentRating={rating}
             />
           </div>
           
@@ -172,6 +216,21 @@ const OrderDetails: React.FC = () => {
                   <span className="text-gray-500">Restaurante:</span>
                   <span className="font-medium">{orderDetails.restaurantName}</span>
                 </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Forma de pagamento:</span>
+                  <div className="flex items-center">
+                    {getPaymentMethodIcon(orderDetails.paymentMethod)}
+                    <span className="font-medium ml-2">{getPaymentMethodName(orderDetails.paymentMethod)}</span>
+                  </div>
+                </div>
+                
+                {orderDetails.paymentDetails && orderDetails.paymentMethod !== 'cash' && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Cartão:</span>
+                    <span className="font-medium">{orderDetails.paymentDetails.number}</span>
+                  </div>
+                )}
                 
                 <div className="py-3 border-t border-b border-gray-200">
                   <h3 className="text-sm font-medium mb-2">Itens do pedido:</h3>
