@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShoppingBag, ArrowUpRight } from 'lucide-react';
+import { ShoppingBag, ArrowUpRight, LogIn } from 'lucide-react';
 import { PaymentMethod } from '@/components/PaymentMethods';
+import { Button } from '@/components/ui/button';
 
 interface OrderItem {
   id: string;
@@ -21,7 +22,7 @@ interface OrderHistory {
   totalValue: number;
   orderTime: string;
   items: OrderItem[];
-  status: 'delivered';
+  status: 'preparing' | 'ready' | 'delivering' | 'delivered';
   paymentMethod: PaymentMethod;
   rating?: number;
 }
@@ -29,17 +30,31 @@ interface OrderHistory {
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Retrieve order history from localStorage
-    const storedOrders = localStorage.getItem('orderHistory');
-    if (storedOrders) {
-      try {
-        const parsedOrders = JSON.parse(storedOrders);
-        setOrders(parsedOrders);
-      } catch (error) {
-        console.error('Error parsing order history:', error);
+    // Check if user is logged in
+    const userJson = localStorage.getItem('user');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      setIsLoggedIn(true);
+      
+      // Retrieve user-specific order history
+      const historyKey = `orderHistory_${user.email}`;
+      const storedOrders = localStorage.getItem(historyKey);
+      
+      if (storedOrders) {
+        try {
+          const parsedOrders = JSON.parse(storedOrders);
+          setOrders(parsedOrders);
+        } catch (error) {
+          console.error('Error parsing order history:', error);
+        }
       }
+    } else {
+      // Not logged in, show empty state
+      setIsLoggedIn(false);
     }
     setLoading(false);
   }, []);
@@ -55,12 +70,48 @@ const Orders: React.FC = () => {
     }).format(date);
   };
 
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
   if (loading) {
     return (
       <Layout>
         <div className="pt-28 pb-16">
           <div className="page-container">
             <p className="text-center">Carregando histórico de pedidos...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If not logged in, show login prompt
+  if (!isLoggedIn) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-16">
+          <div className="page-container">
+            <h1 className="text-2xl font-bold mb-6 flex items-center">
+              <ShoppingBag className="mr-2" />
+              Seus Pedidos
+            </h1>
+            
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-10">
+                  <LogIn size={48} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Faça login para ver seus pedidos</h3>
+                  <p className="text-gray-500 mb-4">Você precisa estar logado para acessar seu histórico de pedidos.</p>
+                  <Button 
+                    onClick={handleLogin}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Fazer Login
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </Layout>

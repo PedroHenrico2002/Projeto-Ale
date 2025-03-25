@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronLeft, CreditCard, Truck, DollarSign } from 'lucide-react';
+import { Check, ChevronLeft, CreditCard, Truck, DollarSign, LogIn } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { PaymentMethod, CardDetails } from '@/components/PaymentMethods';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface OrderItem {
   id: string;
@@ -29,13 +30,19 @@ const ConfirmOrder: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [order, setOrder] = useState<Order | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   
   useEffect(() => {
-    // Recuperar os dados do pedido do sessionStorage
+    // Check login status
+    const userJson = localStorage.getItem('user');
+    setIsLoggedIn(!!userJson);
+    
+    // Recover order data from sessionStorage
     const orderData = sessionStorage.getItem('currentOrder');
     
     if (!orderData) {
-      // Redirecionar se não houver dados de pedido
+      // Redirect if no order data
       toast.error('Nenhum pedido em andamento');
       navigate('/restaurants');
       return;
@@ -52,9 +59,14 @@ const ConfirmOrder: React.FC = () => {
   }, [navigate]);
   
   const handleConfirmOrder = () => {
-    // Salvar informações do pedido para uso na tela de detalhes
+    if (!isLoggedIn) {
+      setShowLoginDialog(true);
+      return;
+    }
+    
+    // Continue with order confirmation
     if (order) {
-      // Simular tempo estimado de entrega (30-45 minutos a partir de agora)
+      // Simulate delivery time (30-45 minutes from now)
       const now = new Date();
       const deliveryTime = new Date(now.getTime() + 30 * 60000);
       const deliveryEndTime = new Date(now.getTime() + 45 * 60000);
@@ -67,13 +79,19 @@ const ConfirmOrder: React.FC = () => {
         orderTime: now.toISOString(),
         estimatedDelivery: `Hoje, ${deliveryTimeStr} - ${deliveryEndTimeStr}`,
         address: "Rua Augusta, 1500 - Consolação, São Paulo",
-        status: 'preparing'
+        status: 'preparing' as const
       };
       
       sessionStorage.setItem('orderDetails', JSON.stringify(orderDetails));
       toast.success('Pedido confirmado com sucesso!');
       navigate('/order-details');
     }
+  };
+  
+  const handleLogin = () => {
+    // Save current order to session storage so we can return to it
+    sessionStorage.setItem('returnToConfirmOrder', 'true');
+    navigate('/login');
   };
   
   const getPaymentMethodIcon = (method: PaymentMethod) => {
@@ -199,6 +217,31 @@ const ConfirmOrder: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Login Dialog */}
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Faça login para continuar</DialogTitle>
+            <DialogDescription className="text-center">
+              Você precisa estar logado para concluir seu pedido.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex justify-center py-4">
+            <LogIn size={48} className="text-red-500" />
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleLogin}
+            >
+              Fazer Login
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

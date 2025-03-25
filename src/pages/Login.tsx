@@ -14,6 +14,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [hasRegisteredUsers, setHasRegisteredUsers] = useState(false);
+  const [shouldReturnToConfirmOrder, setShouldReturnToConfirmOrder] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +25,12 @@ const Login: React.FC = () => {
     } else {
       // If no registered users, force to registration view
       setIsLogin(false);
+    }
+    
+    // Check if we should return to confirm order page
+    const returnToConfirmOrder = sessionStorage.getItem('returnToConfirmOrder');
+    if (returnToConfirmOrder) {
+      setShouldReturnToConfirmOrder(true);
     }
   }, []);
 
@@ -47,7 +54,14 @@ const Login: React.FC = () => {
           // In a real app, we would validate password here
           localStorage.setItem('user', JSON.stringify(user));
           toast.success('Login realizado com sucesso!');
-          navigate('/');
+          
+          // Clear return flag in session storage
+          if (shouldReturnToConfirmOrder) {
+            sessionStorage.removeItem('returnToConfirmOrder');
+            navigate('/confirm-order');
+          } else {
+            navigate('/');
+          }
         } else {
           toast.error('Usuário não encontrado. Por favor, cadastre-se primeiro.');
           setIsLogin(false);
@@ -83,7 +97,14 @@ const Login: React.FC = () => {
       localStorage.setItem('user', JSON.stringify(newUser));
       
       toast.success('Cadastro realizado com sucesso! Você está conectado.');
-      navigate('/');
+      
+      // Clear return flag in session storage
+      if (shouldReturnToConfirmOrder) {
+        sessionStorage.removeItem('returnToConfirmOrder');
+        navigate('/confirm-order');
+      } else {
+        navigate('/');
+      }
     }
   };
 

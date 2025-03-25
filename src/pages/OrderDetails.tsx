@@ -1,12 +1,17 @@
+
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { OrderTracker } from '@/components/OrderTracker';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, CreditCard, DollarSign, Truck } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { OrderTracker } from '@/components/OrderTracker';
+import { 
+  MapPin, Clock, Receipt, CreditCard, Star, ChevronLeft,
+  CheckCircle2, AlertTriangle, TruckIcon, CookingPot, PackageCheck
+} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { toast } from '@/lib/toast';
 import { PaymentMethod } from '@/components/PaymentMethods';
+import confetti from 'canvas-confetti';
 
 interface OrderItem {
   id: string;
@@ -34,39 +39,18 @@ interface OrderDetails {
   rating?: number;
 }
 
+type OrderHistoryItem = OrderDetails;
+
 const OrderDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
-  const [status, setStatus] = useState<'preparing' | 'ready' | 'delivering' | 'delivered'>('preparing');
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [rating, setRating] = useState(0);
-  const [savedToHistory, setSavedToHistory] = useState(false);
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [showDeliveredDialog, setShowDeliveredDialog] = useState(false);
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
   
-  const searchParams = new URLSearchParams(location.search);
-  const orderId = searchParams.get('id');
-  
+  // For demo purposes, we'll simulate order progression
   useEffect(() => {
-    if (orderId) {
-      const storedOrders = localStorage.getItem('orderHistory');
-      if (storedOrders) {
-        try {
-          const parsedOrders = JSON.parse(storedOrders);
-          const foundOrder = parsedOrders.find((order: any) => order.orderNumber === orderId);
-          if (foundOrder) {
-            setOrderDetails(foundOrder);
-            setStatus('delivered');
-            if (foundOrder.rating) {
-              setRating(foundOrder.rating);
-            }
-            return;
-          }
-        } catch (error) {
-          console.error('Error loading order from history:', error);
-        }
-      }
-    }
-    
     const orderData = sessionStorage.getItem('orderDetails');
     
     if (!orderData) {
@@ -75,121 +59,146 @@ const OrderDetails: React.FC = () => {
     }
     
     try {
-      const parsedOrder = JSON.parse(orderData);
+      // Parse initial order details
+      const parsedOrder = JSON.parse(orderData) as OrderDetails;
+      setOrder(parsedOrder);
       
-      const storedAddresses = localStorage.getItem('savedAddresses');
-      if (storedAddresses) {
-        const addresses = JSON.parse(storedAddresses);
-        const defaultAddress = addresses.find((addr: any) => addr.isDefault);
-        if (defaultAddress) {
-          const formattedAddress = `${defaultAddress.street}, ${defaultAddress.number} - ${defaultAddress.neighborhood}, ${defaultAddress.city}`;
-          parsedOrder.address = formattedAddress;
-          sessionStorage.setItem('orderDetails', JSON.stringify(parsedOrder));
+      // Simulate order progression
+      const stateProgression = [
+        { status: 'preparing' as const, delay: 10000 }, // 10 seconds
+        { status: 'ready' as const, delay: 15000 },     // 15 seconds
+        { status: 'delivering' as const, delay: 20000 },// 20 seconds
+        { status: 'delivered' as const, delay: 0 }      // End state
+      ];
+      
+      let timeoutIds: NodeJS.Timeout[] = [];
+      
+      if (parsedOrder.status !== 'delivered') {
+        let currentIndex = stateProgression.findIndex(state => state.status === parsedOrder.status);
+        if (currentIndex === -1) currentIndex = 0;
+        
+        for (let i = currentIndex; i < stateProgression.length; i++) {
+          const state = stateProgression[i];
+          const delay = stateProgression.slice(0, i).reduce((acc, s) => acc + s.delay, 0);
+          
+          const id = setTimeout(() => {
+            setOrder(prev => {
+              if (!prev) return null;
+              const updated = { ...prev, status: state.status };
+              
+              // Update in sessionStorage too
+              sessionStorage.setItem('orderDetails', JSON.stringify(updated));
+              
+              // Show delivered dialog when delivered
+              if (state.status === 'delivered') {
+                setShowDeliveredDialog(true);
+                saveOrderToHistory(updated);
+                // Display confetti effect
+                confetti({
+                  particleCount: 100,
+                  spread: 70,
+                  origin: { y: 0.6 }
+                });
+              }
+              
+              return updated;
+            });
+          }, delay);
+          
+          timeoutIds.push(id);
         }
+      } else if (parsedOrder.status === 'delivered') {
+        // If already delivered, just show dialog
+        setShowDeliveredDialog(true);
       }
       
-      if (parsedOrder.rating) {
-        setRating(parsedOrder.rating);
-      }
-      
-      setOrderDetails(parsedOrder);
-      setStatus(parsedOrder.status || 'preparing');
+      return () => {
+        timeoutIds.forEach(id => clearTimeout(id));
+      };
     } catch (error) {
-      console.error('Erro ao carregar detalhes do pedido:', error);
+      console.error('Error parsing order details:', error);
       navigate('/restaurants');
     }
-  }, [navigate, orderId, location.search]);
+  }, [navigate]);
   
-  useEffect(() => {
-    if (!orderDetails || status === 'delivered' || orderId) return;
+  const saveOrderToHistory = (completedOrder: OrderDetails) => {
+    // Get user from localStorage
+    const userJson = localStorage.getItem('user');
+    if (!userJson) return; // Don't save if no user
     
-    const interval = setInterval(() => {
-      setElapsedTime(prev => {
-        const newTime = prev + 1;
-        
-        if (newTime === 5) {
-          setStatus('ready');
-          const updatedOrder = { ...orderDetails, status: 'ready' };
-          sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
-        } else if (newTime === 10) {
-          setStatus('delivering');
-          const updatedOrder = { ...orderDetails, status: 'delivering' };
-          sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
-        } else if (newTime === 17) {
-          setStatus('delivered');
-          const updatedOrder = { ...orderDetails, status: 'delivered' };
-          sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
-          
-          saveToOrderHistory(updatedOrder);
-          
-          clearInterval(interval);
-        }
-        
-        return newTime;
-      });
-    }, 1000);
+    const user = JSON.parse(userJson);
+    const userId = user.email; // Use email as unique identifier
     
-    return () => clearInterval(interval);
-  }, [orderDetails, status, orderId]);
-  
-  const saveToOrderHistory = (order: OrderDetails) => {
-    if (savedToHistory) return;
+    // Get existing order history for this user
+    const historyKey = `orderHistory_${userId}`;
+    const existingHistoryJson = localStorage.getItem(historyKey);
+    let orderHistory: OrderHistoryItem[] = [];
     
-    try {
-      const existingHistory = localStorage.getItem('orderHistory');
-      let orderHistory = existingHistory ? JSON.parse(existingHistory) : [];
-      
-      if (!orderHistory.some((historyOrder: any) => historyOrder.orderNumber === order.orderNumber)) {
-        orderHistory.unshift(order);
-        localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-        setSavedToHistory(true);
-      }
-    } catch (error) {
-      console.error('Error saving to order history:', error);
+    if (existingHistoryJson) {
+      orderHistory = JSON.parse(existingHistoryJson);
+    }
+    
+    // Add this order to history if not already there
+    if (!orderHistory.some(o => o.orderNumber === completedOrder.orderNumber)) {
+      orderHistory.push(completedOrder);
+      localStorage.setItem(historyKey, JSON.stringify(orderHistory));
+    }
+    
+    // Also update the global order history for backward compatibility
+    const globalHistoryJson = localStorage.getItem('orderHistory');
+    let globalHistory: OrderHistoryItem[] = [];
+    
+    if (globalHistoryJson) {
+      globalHistory = JSON.parse(globalHistoryJson);
+    }
+    
+    if (!globalHistory.some(o => o.orderNumber === completedOrder.orderNumber)) {
+      globalHistory.push(completedOrder);
+      localStorage.setItem('orderHistory', JSON.stringify(globalHistory));
     }
   };
   
-  const handleRating = (rating: number) => {
-    setRating(rating);
-    toast.success(`Obrigado por avaliar o restaurante com ${rating} estrelas!`);
+  const handleRateOrder = () => {
+    if (!order || rating === 0) return;
     
-    if (orderDetails) {
-      const updatedOrder = { 
-        ...orderDetails, 
-        rating,
-        status: 'delivered'
-      };
-      sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
+    // Update order with rating
+    const updatedOrder = { ...order, rating };
+    setOrder(updatedOrder);
+    
+    // Update in session storage
+    sessionStorage.setItem('orderDetails', JSON.stringify(updatedOrder));
+    
+    // Update in history
+    const userJson = localStorage.getItem('user');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      const userId = user.email;
       
-      if (existingHistory) {
-        try {
-          let orderHistory = JSON.parse(existingHistory);
-          orderHistory = orderHistory.map((historyOrder: any) => {
-            if (historyOrder.orderNumber === updatedOrder.orderNumber) {
-              return { ...historyOrder, rating };
-            }
-            return historyOrder;
-          });
-          localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-        } catch (error) {
-          console.error('Error updating rating in order history:', error);
-        }
+      // Update user-specific history
+      const historyKey = `orderHistory_${userId}`;
+      const existingHistoryJson = localStorage.getItem(historyKey);
+      
+      if (existingHistoryJson) {
+        const orderHistory = JSON.parse(existingHistoryJson);
+        const updatedHistory = orderHistory.map((item: OrderHistoryItem) => 
+          item.orderNumber === order.orderNumber ? { ...item, rating } : item
+        );
+        localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+      }
+      
+      // Update global history
+      const globalHistoryJson = localStorage.getItem('orderHistory');
+      if (globalHistoryJson) {
+        const globalHistory = JSON.parse(globalHistoryJson);
+        const updatedGlobalHistory = globalHistory.map((item: OrderHistoryItem) => 
+          item.orderNumber === order.orderNumber ? { ...item, rating } : item
+        );
+        localStorage.setItem('orderHistory', JSON.stringify(updatedGlobalHistory));
       }
     }
-  };
-
-  const getPaymentMethodIcon = (method: PaymentMethod) => {
-    switch (method) {
-      case 'credit':
-      case 'debit':
-        return <CreditCard className="text-gray-500 mt-1" size={18} />;
-      case 'meal':
-        return <DollarSign className="text-gray-500 mt-1" size={18} />;
-      case 'cash':
-        return <Truck className="text-gray-500 mt-1" size={18} />;
-      default:
-        return <CreditCard className="text-gray-500 mt-1" size={18} />;
-    }
+    
+    setShowDeliveredDialog(false);
+    toast.success('Obrigado pela sua avaliação!');
   };
   
   const getPaymentMethodName = (method: PaymentMethod) => {
@@ -207,7 +216,41 @@ const OrderDetails: React.FC = () => {
     }
   };
   
-  if (!orderDetails) {
+  const getStatusIcon = () => {
+    if (!order) return null;
+    
+    switch (order.status) {
+      case 'preparing':
+        return <CookingPot size={20} className="text-yellow-500" />;
+      case 'ready':
+        return <PackageCheck size={20} className="text-blue-500" />;
+      case 'delivering':
+        return <TruckIcon size={20} className="text-purple-500" />;
+      case 'delivered':
+        return <CheckCircle2 size={20} className="text-green-500" />;
+      default:
+        return <AlertTriangle size={20} className="text-red-500" />;
+    }
+  };
+  
+  const statusText = () => {
+    if (!order) return '';
+    
+    switch (order.status) {
+      case 'preparing':
+        return 'Preparando seu pedido';
+      case 'ready':
+        return 'Pedido pronto para entrega';
+      case 'delivering':
+        return 'Pedido a caminho';
+      case 'delivered':
+        return 'Pedido entregue';
+      default:
+        return 'Status desconhecido';
+    }
+  };
+  
+  if (!order) {
     return (
       <Layout>
         <div className="pt-28 pb-16">
@@ -221,97 +264,203 @@ const OrderDetails: React.FC = () => {
   
   return (
     <Layout>
-      <div className="pt-16 pb-16">
+      <div className="pt-28 pb-16">
         <div className="page-container">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              {orderDetails.restaurantId ? (
-                <Link to={`/restaurants/${orderDetails.restaurantId}`} className="text-red-600 mr-3">
-                  <ArrowLeft size={24} />
-                </Link>
-              ) : (
-                <Link to="/" className="text-red-600 mr-3">
-                  <ArrowLeft size={24} />
-                </Link>
-              )}
-              <h1 className="text-xl font-bold">ACOMPANHE SEU PEDIDO</h1>
+          <div className="mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeft size={16} className="mr-1" />
+              <span>Voltar</span>
+            </button>
+          </div>
+          
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white rounded-lg border overflow-hidden mb-6">
+              <div className="p-4 border-b flex items-center justify-between">
+                <div>
+                  <h1 className="text-lg font-bold">Acompanhe seu Pedido</h1>
+                  <div className="text-sm text-gray-500">
+                    Pedido {order.orderNumber} • {new Date(order.orderTime).toLocaleString('pt-BR')}
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  {getStatusIcon()}
+                  <span className="ml-2 font-medium">{statusText()}</span>
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <OrderTracker status={order.status} />
+                
+                <div className="mt-6 space-y-4">
+                  <div className="border-t pt-4">
+                    <h2 className="font-medium mb-2">Detalhes da Entrega</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-start">
+                        <MapPin size={18} className="mr-2 text-red-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Endereço de Entrega</p>
+                          <p className="text-sm text-gray-600">{order.address}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <Clock size={18} className="mr-2 text-red-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Tempo Estimado</p>
+                          <p className="text-sm text-gray-600">{order.estimatedDelivery}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <Receipt size={18} className="mr-2 text-red-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Restaurante</p>
+                          <p className="text-sm text-gray-600">{order.restaurantName}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <CreditCard size={18} className="mr-2 text-red-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Forma de Pagamento</p>
+                          <p className="text-sm text-gray-600">
+                            {getPaymentMethodName(order.paymentMethod)}
+                            {order.paymentDetails && order.paymentMethod !== 'cash' && (
+                              <span className="ml-1">
+                                (•••• {order.paymentDetails.number.slice(-4)})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h2 className="font-medium mb-2">Itens do Pedido</h2>
+                    <div className="space-y-2">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex justify-between">
+                          <div className="flex items-start">
+                            <span className="bg-red-100 text-red-600 w-6 h-6 rounded-full flex items-center justify-center mr-2">
+                              {item.quantity}
+                            </span>
+                            <span>{item.name}</span>
+                          </div>
+                          <span className="font-medium">{item.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t mt-3 pt-3">
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Total</span>
+                        <span className="text-lg">R${order.totalValue.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Rating section (shown only for delivered orders) */}
+            {order.status === 'delivered' && !order.rating && (
+              <div className="bg-white rounded-lg border p-4 text-center">
+                <h3 className="font-semibold mb-2">Avaliar Restaurante:</h3>
+                <div className="flex justify-center mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star}
+                      size={32}
+                      className={`cursor-pointer transition-colors ${
+                        (hoverRating || rating) >= star 
+                          ? 'text-yellow-400 fill-yellow-400' 
+                          : 'text-gray-300'
+                      }`}
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                    />
+                  ))}
+                </div>
+                <Button 
+                  onClick={handleRateOrder}
+                  disabled={rating === 0}
+                  className={`${rating === 0 ? 'bg-gray-300' : 'bg-red-600 hover:bg-red-700'} text-white`}
+                >
+                  Enviar Avaliação
+                </Button>
+              </div>
+            )}
+            
+            {/* Already rated */}
+            {order.status === 'delivered' && order.rating && (
+              <div className="bg-white rounded-lg border p-4 text-center">
+                <h3 className="font-semibold mb-2">Sua Avaliação:</h3>
+                <div className="flex justify-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star}
+                      size={32}
+                      className={`${
+                        order.rating >= star 
+                          ? 'text-yellow-400 fill-yellow-400' 
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-gray-600">Obrigado pela sua avaliação!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Delivered Dialog */}
+      <Dialog open={showDeliveredDialog} onOpenChange={setShowDeliveredDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">Pedido Entregue!</DialogTitle>
+            <DialogDescription className="text-center">
+              Seu pedido foi entregue com sucesso.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex justify-center py-4">
+            <CheckCircle2 size={64} className="text-green-500" />
+          </div>
+          
+          <div className="text-center mb-4">
+            <h3 className="font-semibold mb-2">Avaliar Restaurante:</h3>
+            <div className="flex justify-center mb-3">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star}
+                  size={32}
+                  className={`cursor-pointer transition-colors ${
+                    (hoverRating || rating) >= star 
+                      ? 'text-yellow-400 fill-yellow-400' 
+                      : 'text-gray-300'
+                  }`}
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                />
+              ))}
             </div>
           </div>
           
-          <div className="mb-8">
-            <OrderTracker 
-              status={status} 
-              estimatedDelivery={orderDetails.estimatedDelivery}
-              simplified={true}
-              onRate={handleRating}
-              currentRating={rating}
-            />
-          </div>
-          
-          <Card className="mb-6">
-            <CardHeader className="pb-0">
-              <h2 className="text-base font-medium">Entrega em</h2>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-3">
-                <MapPin className="text-gray-500 mt-1" size={18} />
-                <p className="text-sm">{orderDetails.address}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-0">
-              <h2 className="text-base font-medium">Detalhes do pedido</h2>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Número do pedido:</span>
-                  <span className="font-medium">{orderDetails.orderNumber}</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Restaurante:</span>
-                  <span className="font-medium">{orderDetails.restaurantName}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Forma de pagamento:</span>
-                  <div className="flex items-center">
-                    {getPaymentMethodIcon(orderDetails.paymentMethod)}
-                    <span className="font-medium ml-2">{getPaymentMethodName(orderDetails.paymentMethod)}</span>
-                  </div>
-                </div>
-                
-                {orderDetails.paymentDetails && orderDetails.paymentMethod !== 'cash' && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Cartão:</span>
-                    <span className="font-medium">{orderDetails.paymentDetails.number}</span>
-                  </div>
-                )}
-                
-                <div className="py-3 border-t border-b border-gray-200">
-                  <h3 className="text-sm font-medium mb-2">Itens do pedido:</h3>
-                  <div className="space-y-2">
-                    {orderDetails.items.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span>{item.quantity}× {item.name}</span>
-                        <span>{item.price}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center font-medium">
-                  <span>Total</span>
-                  <span>R${orderDetails.totalValue.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          <DialogFooter>
+            <Button
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleRateOrder}
+              disabled={rating === 0}
+            >
+              Confirmar Avaliação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
