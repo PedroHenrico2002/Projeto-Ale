@@ -291,7 +291,12 @@ const OrderDetails: React.FC = () => {
                         <MapPin size={18} className="mr-2 text-red-500 mt-0.5" />
                         <div>
                           <p className="font-medium">Endereço de Entrega</p>
-                          <p className="text-sm text-gray-600">{order.address}</p>
+                          <p className="text-sm text-gray-600">
+                            {order.address}
+                            <span className="block mt-1 text-xs text-red-500">
+                              Entrega estimada em {order.estimatedDelivery}
+                            </span>
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-start">
