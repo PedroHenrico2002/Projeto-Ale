@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -54,130 +53,141 @@ const restaurantsData = {
   },
   '2': {
     id: '2',
-    name: 'Gelato Italiano',
-    image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Sorvetes e Gelatos',
-    rating: 4.6,
-    deliveryTime: '15-30 min',
-    minOrder: 'R$6,50',
+    name: 'Restaurante Japonês',
+    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Japonesa',
+    rating: 4.9,
+    deliveryTime: '30-45 min',
+    minOrder: 'R$25,00',
     menu: [
-      {
-        id: '201',
-        name: 'Gelato de Pistache',
-        image: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Gelato italiano autêntico de pistache',
-        price: 'R$18,90',
-        priceValue: 18.90
-      },
-      {
-        id: '202',
-        name: 'Sorvete de Chocolate Belga',
-        image: 'https://images.unsplash.com/photo-1563894923499-f65aff78a0d6?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Sorvete cremoso de chocolate belga premium',
-        price: 'R$16,50',
-        priceValue: 16.50
-      },
-      {
-        id: '203',
-        name: 'Sundae de Caramelo',
-        image: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Sundae com sorvete de baunilha, calda de caramelo e amendoim',
-        price: 'R$14,90',
-        priceValue: 14.90
-      },
-      {
-        id: '204',
-        name: 'Banana Split',
-        image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Clássica banana split com três sabores de sorvete e coberturas especiais',
-        price: 'R$22,90',
-        priceValue: 22.90
-      }
+      
     ]
   },
   '3': {
     id: '3',
-    name: 'Confeitaria Doce Sonho',
-    image: 'https://images.unsplash.com/photo-1574085733277-851d9d856a3a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Doces e Confeitaria',
-    rating: 4.8,
-    deliveryTime: '25-40 min',
-    minOrder: 'R$7,50',
+    name: 'Churrascaria Gaúcha',
+    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Churrasco',
+    rating: 4.7,
+    deliveryTime: '35-50 min',
+    minOrder: 'R$30,00',
     menu: [
-      {
-        id: '301',
-        name: 'Croissant Recheado',
-        image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Croissant francês recheado com creme de avelã',
-        price: 'R$12,90',
-        priceValue: 12.90
-      },
-      {
-        id: '302',
-        name: 'Éclair de Chocolate',
-        image: 'https://images.unsplash.com/photo-1603532648955-039310d9ed75?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Éclair recheado com creme de confeiteiro e coberto com ganache de chocolate',
-        price: 'R$9,90',
-        priceValue: 9.90
-      },
-      {
-        id: '303',
-        name: 'Macarons Sortidos',
-        image: 'https://images.unsplash.com/photo-1558326567-98166e4c1917?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Caixa com 6 macarons sortidos de sabores variados',
-        price: 'R$21,90',
-        priceValue: 21.90
-      },
-      {
-        id: '304',
-        name: 'Torta Mil Folhas',
-        image: 'https://images.unsplash.com/photo-1464195244916-405fa0a8763d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Clássica torta mil folhas com creme de baunilha',
-        price: 'R$18,50',
-        priceValue: 18.50
-      }
+      
     ]
   },
   '4': {
     id: '4',
+    name: 'Comida Caseira',
+    image: 'https://images.unsplash.com/photo-1547928576-f8d1c7a1b709?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Brasileira',
+    rating: 4.5,
+    deliveryTime: '20-35 min',
+    minOrder: 'R$12,90',
+    menu: [
+      
+    ]
+  },
+  '6': {
+    id: '6',
+    name: 'Gelato Italiano',
+    image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Sorvetes e Gelatos Artesanais',
+    rating: 4.6,
+    deliveryTime: '15-30 min',
+    minOrder: 'R$6,50',
+    featured: true,
+    menu: [
+      {
+        id: '601',
+        name: 'Gelato de Pistache Tradicional',
+        image: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Gelato italiano autêntico de pistache, feito com ingredientes importados da Sicília',
+        price: 'R$18,90',
+        priceValue: 18.90
+      },
+      {
+        id: '602',
+        name: 'Sorvete de Chocolate Belga Premium',
+        image: 'https://images.unsplash.com/photo-1563894923499-f65aff78a0d6?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Sorvete cremoso de chocolate belga premium com 70% de cacau e pedaços de chocolate',
+        price: 'R$16,50',
+        priceValue: 16.50
+      },
+      {
+        id: '603',
+        name: 'Sundae de Caramelo Salgado',
+        image: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Sundae especial com sorvete de baunilha, calda de caramelo salgado e amendoim torrado',
+        price: 'R$14,90',
+        priceValue: 14.90
+      },
+      {
+        id: '604',
+        name: 'Banana Split Clássica',
+        image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Clássica banana split com três sabores de sorvete (chocolate, morango e baunilha) e coberturas especiais',
+        price: 'R$22,90',
+        priceValue: 22.90
+      },
+      {
+        id: '605',
+        name: 'Gelato de Stracciatella',
+        image: 'https://images.unsplash.com/photo-1584278858021-91b1319e5c64?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Tradicional gelato de creme com lascas de chocolate amargo importado',
+        price: 'R$17,90',
+        priceValue: 17.90
+      }
+    ]
+  },
+  '8': {
+    id: '8',
     name: 'Açaí Tropical',
-    image: 'https://images.unsplash.com/photo-1502825751399-28baa9b81995?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Açaí e Smoothies',
+    image: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Açaí e Smoothies Premium',
     rating: 4.7,
     deliveryTime: '20-35 min',
     minOrder: 'R$5,50',
+    featured: true,
     menu: [
       {
-        id: '401',
-        name: 'Açaí Tradicional',
+        id: '801',
+        name: 'Açaí Tradicional na Tigela',
         image: 'https://images.unsplash.com/photo-1615478503562-ec2d8aa0e24e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Açaí tradicional com banana, granola e mel',
+        description: 'Açaí tradicional na tigela com banana, granola e mel orgânico',
         price: 'R$15,90',
         priceValue: 15.90
       },
       {
-        id: '402',
+        id: '802',
         name: 'Smoothie de Frutas Vermelhas',
         image: 'https://images.unsplash.com/photo-1506802913710-40e2e66339c9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Smoothie refrescante de frutas vermelhas com iogurte natural',
+        description: 'Smoothie refrescante de frutas vermelhas (morango, framboesa e amora) com iogurte natural',
         price: 'R$12,50',
         priceValue: 12.50
       },
       {
-        id: '403',
-        name: 'Açaí com Mix de Frutas',
+        id: '803',
+        name: 'Açaí Especial com Mix de Frutas',
         image: 'https://images.unsplash.com/photo-1577805947697-89e18249d767?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Açaí com mix de frutas frescas, leite condensado e granola',
+        description: 'Açaí premium com mix de frutas frescas (morango, kiwi, banana), leite condensado e granola artesanal',
         price: 'R$19,90',
         priceValue: 19.90
       },
       {
-        id: '404',
-        name: 'Bowl Energia',
+        id: '804',
+        name: 'Bowl Energia Amazônica',
         image: 'https://images.unsplash.com/photo-1573590330099-d6c7355ec595?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-        description: 'Bowl energético com açaí, banana, morango, granola e pasta de amendoim',
+        description: 'Bowl energético com açaí amazônico, banana, morango, granola, castanhas brasileiras e pasta de amendoim natural',
         price: 'R$22,90',
         priceValue: 22.90
+      },
+      {
+        id: '805',
+        name: 'Açaí com Cupuaçu',
+        image: 'https://images.unsplash.com/photo-1606213651356-0adb205dec89?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+        description: 'Mistura especial de açaí com cupuaçu, servida com granola e mel',
+        price: 'R$18,50',
+        priceValue: 18.50
       }
     ]
   }

@@ -63,4 +63,3 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDel
     </div>
   );
 };
-

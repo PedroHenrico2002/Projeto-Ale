@@ -60,7 +60,7 @@ const restaurants = [
   },
 ];
 
-// Sobremesas (keeping the existing dessert restaurants)
+// Sobremesas (enhanced images and data)
 const dessertRestaurants = [
   {
     id: '5',
@@ -78,12 +78,13 @@ const dessertRestaurants = [
     id: '6',
     name: 'Gelato Italiano',
     image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Sorvetes e Gelatos',
+    cuisine: 'Sorvetes e Gelatos Artesanais',
     rating: 4.6,
     deliveryTime: '15-30 min',
     minOrder: 'R$6,50',
     orderCount: 85,
-    category: 'desserts'
+    category: 'desserts',
+    featured: true
   },
   {
     id: '7',
@@ -99,13 +100,14 @@ const dessertRestaurants = [
   {
     id: '8',
     name: 'Açaí Tropical',
-    image: 'https://images.unsplash.com/photo-1502825751399-28baa9b81995?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    cuisine: 'Açaí e Smoothies',
+    image: 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
+    cuisine: 'Açaí e Smoothies Premium',
     rating: 4.7,
     deliveryTime: '20-35 min',
     minOrder: 'R$5,50',
     orderCount: 92,
-    category: 'desserts'
+    category: 'desserts',
+    featured: true
   },
 ];
 
