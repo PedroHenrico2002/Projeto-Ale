@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, User, ChevronDown, ShoppingBag } from 'lucide-react';
@@ -83,10 +84,6 @@ export const Navbar: React.FC = () => {
               <h1 className="text-xl font-bold text-red-600">Be Legendary</h1>
             </Link>
             
-            <Link to="/restaurants" className="text-sm text-gray-700 hover:text-red-600">
-              Restaurantes
-            </Link>
-
             <Link to="/orders" className="text-sm text-gray-700 hover:text-red-600 flex items-center">
               <ShoppingBag size={16} className="mr-1" />
               Pedidos
