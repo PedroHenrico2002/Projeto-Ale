@@ -1,16 +1,48 @@
-
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { SystemArchitecture } from '@/components/SystemArchitecture';
+import { Button } from '@/components/ui/button';
+import { FileDown } from 'lucide-react';
+import { exportToWord } from '@/utils/documentExport';
+import { useToast } from '@/components/ui/use-toast';
 
 const SystemDocumentation: React.FC = () => {
+  const { toast } = useToast();
+
+  const handleExport = async () => {
+    try {
+      await exportToWord();
+      toast({
+        title: "Documento exportado com sucesso!",
+        description: "O arquivo foi salvo em sua pasta de downloads.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      toast({
+        title: "Erro ao exportar o documento",
+        description: "Ocorreu um erro ao gerar o arquivo. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-screen pt-20 pb-16">
         <div className="page-container">
           <div className="max-w-4xl mx-auto space-y-8">
             <section className="bg-white shadow-md rounded-lg p-6">
-              <h1 className="text-2xl font-bold mb-4">Documentação do Sistema - Be Legendary</h1>
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">Documentação do Sistema - Be Legendary</h1>
+                <Button 
+                  onClick={handleExport} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <FileDown size={18} className="mr-2" />
+                  Exportar para Word
+                </Button>
+              </div>
               
               <div className="space-y-6">
                 <div>
