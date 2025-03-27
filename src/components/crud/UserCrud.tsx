@@ -4,9 +4,9 @@ import { userService, User } from '@/utils/databaseService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pencil, Trash2, Plus, User as UserIcon } from 'lucide-react';
+import { Pencil, Trash2, Plus, User as UserIcon, Key } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export const UserCrud: React.FC = () => {
@@ -24,6 +24,10 @@ export const UserCrud: React.FC = () => {
     setUsers(userService.getAll());
   };
 
+  const generateUserId = () => {
+    return Math.floor(10000 + Math.random() * 90000);
+  };
+
   const handleOpenDialog = (user?: User) => {
     if (user) {
       setCurrentUser(user);
@@ -33,7 +37,8 @@ export const UserCrud: React.FC = () => {
         name: '',
         email: '',
         authType: 'email',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        userId: generateUserId().toString()
       });
       setIsEditing(false);
     }
@@ -119,6 +124,7 @@ export const UserCrud: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>ID Usuário</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Tipo de Auth</TableHead>
@@ -130,6 +136,7 @@ export const UserCrud: React.FC = () => {
             {users.length > 0 ? (
               users.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell>{user.userId || generateUserId()}</TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.authType}</TableCell>
@@ -148,7 +155,7 @@ export const UserCrud: React.FC = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
+                <TableCell colSpan={6} className="text-center py-4">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <UserIcon size={24} />
                     <p>Nenhum usuário cadastrado</p>
@@ -164,9 +171,22 @@ export const UserCrud: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+            <DialogDescription>
+              {!isEditing && 'Preencha os dados para criar um novo usuário'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="userId">ID do Usuário</Label>
+                <Input
+                  id="userId"
+                  name="userId"
+                  value={currentUser.userId || generateUserId()}
+                  readOnly
+                  className="bg-gray-100"
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">Nome</Label>
                 <Input

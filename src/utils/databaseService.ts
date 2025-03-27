@@ -1,7 +1,7 @@
-
 // Types for our entities
 export interface User {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   authType: string;
@@ -16,6 +16,8 @@ export interface Address {
   complement?: string;
   city: string;
   isDefault: boolean;
+  restaurantId?: string;
+  isRestaurantAddress?: boolean;
 }
 
 export interface Category {
@@ -33,6 +35,7 @@ export interface Restaurant {
   deliveryTime?: string;
   minOrder?: string;
   rating?: number;
+  addressId?: string;
 }
 
 export interface MenuItem {
@@ -43,6 +46,7 @@ export interface MenuItem {
   price: number;
   imageUrl?: string;
   category?: string;
+  rating?: number;
 }
 
 // Initialize database if it doesn't exist
@@ -58,7 +62,9 @@ const initializeDatabase = () => {
       { id: '1', name: 'Pizza', icon: '🍕' },
       { id: '2', name: 'Burger', icon: '🍔' },
       { id: '3', name: 'Sushi', icon: '🍣' },
-      { id: '4', name: 'Salad', icon: '🥗' }
+      { id: '4', name: 'Salad', icon: '🥗' },
+      { id: '5', name: 'Sobremesas', icon: '🍰' },
+      { id: '6', name: 'Bebidas', icon: '🥤' }
     ]));
   }
   if (!localStorage.getItem('restaurants')) {
@@ -154,6 +160,7 @@ export const restaurantService = {
   remove: (id: string) => remove<Restaurant>('restaurants', id)
 };
 
+// Update menuItemService to include filtering
 export const menuItemService = {
   getAll: () => getAll<MenuItem>('menuItems'),
   getByRestaurantId: (restaurantId: string) => {
@@ -163,7 +170,25 @@ export const menuItemService = {
   getById: (id: string) => getById<MenuItem>('menuItems', id),
   create: (data: Omit<MenuItem, 'id'>) => create<MenuItem>('menuItems', data),
   update: (id: string, data: Partial<MenuItem>) => update<MenuItem>('menuItems', id, data),
-  remove: (id: string) => remove<MenuItem>('menuItems', id)
+  remove: (id: string) => remove<MenuItem>('menuItems', id),
+  
+  // Filter functions
+  filterByName: (name: string) => {
+    const menuItems = getAll<MenuItem>('menuItems');
+    return menuItems.filter(item => 
+      item.name.toLowerCase().includes(name.toLowerCase())
+    );
+  },
+  
+  sortAlphabetically: () => {
+    const menuItems = getAll<MenuItem>('menuItems');
+    return [...menuItems].sort((a, b) => a.name.localeCompare(b.name));
+  },
+  
+  sortByRating: () => {
+    const menuItems = getAll<MenuItem>('menuItems');
+    return [...menuItems].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
 };
 
 // Initialize the database when the module is imported

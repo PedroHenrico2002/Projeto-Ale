@@ -1,30 +1,39 @@
 
 import React, { useState, useEffect } from 'react';
-import { restaurantService, categoryService, Restaurant, Category } from '@/utils/databaseService';
+import { restaurantService, categoryService, addressService, Restaurant, Category, Address } from '@/utils/databaseService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pencil, Trash2, Plus, Store } from 'lucide-react';
+import { Pencil, Trash2, Plus, Store, MapPin, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 export const RestaurantCrud: React.FC = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentRestaurant, setCurrentRestaurant] = useState<Partial<Restaurant>>({});
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadRestaurants();
     setCategories(categoryService.getAll());
+    loadAddresses();
   }, []);
 
   const loadRestaurants = () => {
     setRestaurants(restaurantService.getAll());
+  };
+
+  const loadAddresses = () => {
+    setAddresses(addressService.getAll().filter(a => a.isRestaurantAddress));
   };
 
   const handleOpenDialog = (restaurant?: Restaurant) => {
@@ -57,6 +66,15 @@ export const RestaurantCrud: React.FC = () => {
 
   const handleCategoryChange = (value: string) => {
     setCurrentRestaurant({ ...currentRestaurant, categoryId: value });
+  };
+
+  const handleAddressChange = (value: string) => {
+    setCurrentRestaurant({ ...currentRestaurant, addressId: value });
+  };
+
+  const handleOpenAddressDialog = (restaurantId: string) => {
+    setSelectedRestaurantId(restaurantId);
+    setIsAddressDialogOpen(true);
   };
 
   const validateForm = () => {
@@ -105,7 +123,17 @@ export const RestaurantCrud: React.FC = () => {
 
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
-    return category ? category.name : 'Categoria não encontrada';
+    return category ? `${category.icon || ''} ${category.name}` : 'Categoria não encontrada';
+  };
+
+  const getAddressInfo = (restaurantId: string) => {
+    const restaurant = restaurants.find(r => r.id === restaurantId);
+    if (!restaurant || !restaurant.addressId) return 'Sem endereço';
+    
+    const address = addresses.find(a => a.id === restaurant.addressId);
+    if (!address) return 'Endereço não encontrado';
+    
+    return `${address.street}, ${address.number}, ${address.city}`;
   };
 
   return (
@@ -135,7 +163,29 @@ export const RestaurantCrud: React.FC = () => {
             {restaurants.length > 0 ? (
               restaurants.map((restaurant) => (
                 <TableRow key={restaurant.id}>
-                  <TableCell>{restaurant.name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>{restaurant.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {restaurant.addressId ? (
+                          <Badge variant="outline" className="mt-1 flex items-center gap-1">
+                            <MapPin size={12} />
+                            {getAddressInfo(restaurant.id)}
+                          </Badge>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-xs mt-1"
+                            onClick={() => handleOpenAddressDialog(restaurant.id)}
+                          >
+                            <MapPin size={12} className="mr-1" />
+                            Adicionar endereço
+                          </Button>
+                        )}
+                      </span>
+                    </div>
+                  </TableCell>
                   <TableCell>{getCategoryName(restaurant.categoryId)}</TableCell>
                   <TableCell>{restaurant.cuisine || '-'}</TableCell>
                   <TableCell>{restaurant.deliveryTime || '-'}</TableCell>
@@ -171,6 +221,9 @@ export const RestaurantCrud: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Editar Restaurante' : 'Novo Restaurante'}</DialogTitle>
+            <DialogDescription>
+              Preencha os detalhes do restaurante
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid gap-4">
@@ -201,6 +254,27 @@ export const RestaurantCrud: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {addresses.length > 0 && (
+                <div className="grid gap-2">
+                  <Label htmlFor="addressId">Endereço</Label>
+                  <Select 
+                    onValueChange={handleAddressChange} 
+                    defaultValue={currentRestaurant.addressId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um endereço" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sem endereço</SelectItem>
+                      {addresses.map(address => (
+                        <SelectItem key={address.id} value={address.id}>
+                          {address.street}, {address.number}, {address.city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="cuisine">Tipo de Cozinha</Label>
                 <Input
