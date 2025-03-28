@@ -1,18 +1,30 @@
 
+/**
+ * Componente de Navegação Principal
+ * 
+ * Este componente exibe a barra de navegação superior presente em todas as páginas,
+ * gerenciando o endereço de entrega, login/logout do usuário e links rápidos.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, User, ChevronDown, ShoppingBag, Settings } from 'lucide-react';
 import { AddressDialog } from './AddressDialog';
 
 export const Navbar: React.FC = () => {
+  // Estados locais para gerenciar informações do usuário e endereço
   const [address, setAddress] = useState('Rua Augusta, 1500');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const navigate = useNavigate();
   
+  /**
+   * Effect para carregar dados do usuário e endereço padrão
+   * quando o componente é montado
+   */
   useEffect(() => {
-    // Check if user is logged in from localStorage
+    // Verifica se o usuário está logado (dados no localStorage)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
@@ -20,7 +32,7 @@ export const Navbar: React.FC = () => {
       setUserName(user.name);
     }
     
-    // Get default address
+    // Carrega o endereço padrão salvo (se existir)
     const storedAddresses = localStorage.getItem('savedAddresses');
     if (storedAddresses) {
       const addresses = JSON.parse(storedAddresses);
@@ -32,6 +44,10 @@ export const Navbar: React.FC = () => {
     }
   }, []);
 
+  /**
+   * Função para realizar o logout do usuário
+   * Remove dados da sessão e retorna à página inicial
+   */
   const handleLogout = () => {
     localStorage.removeItem('user');
     setIsLoggedIn(false);
@@ -39,17 +55,22 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
   
+  /**
+   * Função para atualizar o endereço de entrega selecionado
+   * @param newAddress - Novo endereço selecionado pelo usuário
+   */
   const handleAddressChange = (newAddress: string) => {
-    setAddress(newAddress.split(' - ')[0]); // Only show street and number in navbar
+    // Atualiza o endereço exibido na barra de navegação (apenas rua e número)
+    setAddress(newAddress.split(' - ')[0]);
     
-    // Update address in order details if on order details page
+    // Atualiza o endereço nos detalhes do pedido (se estiver na página de detalhes)
     const orderDetails = sessionStorage.getItem('orderDetails');
     if (orderDetails) {
       const parsedOrder = JSON.parse(orderDetails);
       parsedOrder.address = newAddress;
       sessionStorage.setItem('orderDetails', JSON.stringify(parsedOrder));
       
-      // Refresh the page if on order details page to reflect the address change
+      // Atualiza a página se estiver na tela de detalhes do pedido
       if (window.location.pathname.includes('order-details')) {
         window.location.reload();
       }
@@ -60,7 +81,7 @@ export const Navbar: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Location */}
+          {/* Seção de localização/endereço */}
           <div className="flex items-center text-sm">
             <MapPin size={18} className="text-red-500 mr-1" />
             <button 
@@ -71,6 +92,7 @@ export const Navbar: React.FC = () => {
               <ChevronDown size={16} className="ml-1 text-red-500" />
             </button>
             
+            {/* Diálogo para seleção de endereço */}
             <AddressDialog 
               open={showAddressDialog} 
               onOpenChange={setShowAddressDialog}
@@ -78,7 +100,7 @@ export const Navbar: React.FC = () => {
             />
           </div>
           
-          {/* Logo */}
+          {/* Logo e links principais */}
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center">
               <h1 className="text-xl font-bold text-red-600">Be Legendary</h1>
@@ -95,7 +117,7 @@ export const Navbar: React.FC = () => {
             </Link>
           </div>
           
-          {/* Auth */}
+          {/* Área de autenticação */}
           <div className="flex items-center space-x-4">
             {isLoggedIn ? (
               <div className="flex items-center space-x-2">
