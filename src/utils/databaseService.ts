@@ -50,6 +50,14 @@ export interface MenuItem {
   rating?: number;
 }
 
+// Generate a unique ID
+// Moving this function up before it's used
+const generateId = (): string => {
+  // Function: Generate a random unique ID for new entities
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+};
+
 // Sample data for initial population
 const sampleRestaurants = [
   {
@@ -60,7 +68,8 @@ const sampleRestaurants = [
     cuisine: 'Doces e Bolos',
     deliveryTime: '20-35 min',
     minOrder: 'R$5,90',
-    rating: 4.9
+    rating: 4.9,
+    addressId: '1'  // Adding addressId property
   },
   {
     id: '2',
@@ -70,7 +79,8 @@ const sampleRestaurants = [
     cuisine: 'Japonesa',
     deliveryTime: '30-45 min',
     minOrder: 'R$25,00',
-    rating: 4.9
+    rating: 4.9,
+    addressId: '2'
   },
   {
     id: '3',
@@ -80,7 +90,8 @@ const sampleRestaurants = [
     cuisine: 'Churrasco',
     deliveryTime: '35-50 min',
     minOrder: 'R$30,00',
-    rating: 4.7
+    rating: 4.7,
+    addressId: '3'
   },
   {
     id: '4',
@@ -90,7 +101,8 @@ const sampleRestaurants = [
     cuisine: 'Brasileira',
     deliveryTime: '20-35 min',
     minOrder: 'R$12,90',
-    rating: 4.5
+    rating: 4.5,
+    addressId: '4'
   },
   {
     id: '6',
@@ -100,7 +112,8 @@ const sampleRestaurants = [
     cuisine: 'Sorvetes e Gelatos Artesanais',
     deliveryTime: '15-30 min',
     minOrder: 'R$6,50',
-    rating: 4.6
+    rating: 4.6,
+    addressId: '6'
   },
   {
     id: '7',
@@ -110,7 +123,8 @@ const sampleRestaurants = [
     cuisine: 'Doces e Confeitaria',
     deliveryTime: '25-40 min',
     minOrder: 'R$7,50',
-    rating: 4.8
+    rating: 4.8,
+    addressId: '7'
   },
   {
     id: '8',
@@ -120,7 +134,8 @@ const sampleRestaurants = [
     cuisine: 'Açaí e Smoothies Premium',
     deliveryTime: '20-35 min',
     minOrder: 'R$5,50',
-    rating: 4.7
+    rating: 4.7,
+    addressId: '8'
   }
 ];
 
@@ -306,13 +321,6 @@ const initializeDatabase = () => {
   if (!localStorage.getItem('menuItems')) {
     localStorage.setItem('menuItems', JSON.stringify(sampleMenuItems));
   }
-};
-
-// Generate a unique ID
-const generateId = (): string => {
-  // Function: Generate a random unique ID for new entities
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
 };
 
 // Generic CRUD operations
