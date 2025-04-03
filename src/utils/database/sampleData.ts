@@ -3,8 +3,13 @@
  * Dados de exemplo para popular o banco de dados
  */
 
-import { generateId } from './utils';
 import { User, Address, Category, Restaurant, MenuItem } from './types';
+
+// Função local para gerar IDs aleatórios (para evitar dependência circular)
+const generateSampleId = (): string => {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+};
 
 // Restaurantes de exemplo
 export const sampleRestaurants: Restaurant[] = [
@@ -198,28 +203,28 @@ export const sampleAddresses: Address[] = [
 // Usuários de exemplo
 export const sampleUsers: User[] = [
   {
-    id: generateId(),
+    id: generateSampleId(),
     name: 'Administrador',
     email: 'admin@belegendary.com',
     authType: 'email',
     createdAt: new Date().toISOString()
   },
   {
-    id: generateId(),
+    id: generateSampleId(),
     name: 'Maria Silva',
     email: 'maria@example.com',
     authType: 'email',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
   },
   {
-    id: generateId(),
+    id: generateSampleId(),
     name: 'João Santos',
     email: 'joao@example.com',
     authType: 'google',
     createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days ago
   },
   {
-    id: generateId(),
+    id: generateSampleId(),
     name: 'Ana Oliveira',
     email: 'ana@example.com',
     authType: 'facebook',
