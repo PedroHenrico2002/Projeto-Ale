@@ -45,4 +45,6 @@ export const initializeDatabase = () => {
   if (!localStorage.getItem('menuItems')) {
     localStorage.setItem('menuItems', JSON.stringify(sampleMenuItems));
   }
+  
+  console.log('Banco de dados inicializado com sucesso!');
 };
