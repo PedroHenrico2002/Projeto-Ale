@@ -6,10 +6,10 @@
  * Ele inicializa a renderização do componente App no elemento raiz do DOM.
  */
 
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+import React from 'react'; // Importa o núcleo do React
+import { createRoot } from 'react-dom/client'; // Importa a API de renderização do React 18
+import App from './App.tsx'; // Importa o componente principal da aplicação
+import './index.css'; // Importa os estilos globais da aplicação
 
 // Seleciona o elemento raiz onde a aplicação React será montada
 const rootElement = document.getElementById('root');
@@ -24,7 +24,7 @@ const root = createRoot(rootElement);
 
 // Renderiza o componente App dentro do modo StrictMode para detectar problemas potenciais
 root.render(
-  <React.StrictMode>
-    <App />
+  <React.StrictMode> {/* Ativa verificações adicionais durante o desenvolvimento */}
+    <App /> {/* Renderiza o componente principal App */}
   </React.StrictMode>
 );
