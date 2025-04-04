@@ -294,7 +294,8 @@ const OrderDetails: React.FC = () => {
               <div className="p-4">
                 <OrderTracker 
                   status={order.status} 
-                  estimatedDelivery={order.estimatedDelivery} 
+                  estimatedDelivery={order.estimatedDelivery}
+                  address={order.address}
                 />
                 
                 <div className="mt-6 space-y-4">

@@ -1,13 +1,15 @@
 
 import React from 'react';
 import { CheckCircle2, Clock, PackageCheck, TruckIcon } from 'lucide-react';
+import { DeliveryMap } from './DeliveryMap';
 
 export interface OrderTrackerProps {
   status: 'preparing' | 'ready' | 'delivering' | 'delivered';
   estimatedDelivery?: string;
+  address?: string;
 }
 
-export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDelivery }) => {
+export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDelivery, address }) => {
   // Define the steps for the order process
   const steps = [
     { key: 'preparing', label: 'Preparando' },
@@ -18,6 +20,9 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDel
   
   // Find the current step index
   const currentStepIndex = steps.findIndex(step => step.key === status);
+  
+  // Verifica se o pedido está em trânsito ou foi entregue para exibir o mapa
+  const showMap = status === 'delivering' || status === 'delivered';
   
   return (
     <div className="w-full">
@@ -54,6 +59,11 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDel
           </React.Fragment>
         ))}
       </div>
+      
+      {/* Mapa de entrega (apenas quando estiver a caminho ou entregue) */}
+      {showMap && (
+        <DeliveryMap status={status as 'delivering' | 'delivered'} deliveryAddress={address} />
+      )}
       
       {estimatedDelivery && (
         <div className="mt-3 text-center text-sm text-gray-500">
