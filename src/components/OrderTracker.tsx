@@ -60,9 +60,13 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, estimatedDel
         ))}
       </div>
       
-      {/* Mapa de entrega (apenas quando estiver a caminho ou entregue) */}
+      {/* Mapa de entrega sincronizado em tempo real (apenas quando estiver a caminho ou entregue) */}
       {showMap && (
-        <DeliveryMap status={status as 'delivering' | 'delivered'} deliveryAddress={address} />
+        <DeliveryMap 
+          status={status as 'delivering' | 'delivered'} 
+          deliveryAddress={address} 
+          realTimeTracking={true} 
+        />
       )}
       
       {estimatedDelivery && (

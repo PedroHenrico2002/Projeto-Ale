@@ -8,12 +8,15 @@ interface DeliveryMapProps {
   status: 'delivering' | 'delivered';
   // Endereço de entrega (opcional)
   deliveryAddress?: string;
+  // Habilitar rastreamento em tempo real
+  realTimeTracking?: boolean;
 }
 
 // Componente que exibe o mapa de entrega
 export const DeliveryMap: React.FC<DeliveryMapProps> = ({ 
   status, 
-  deliveryAddress 
+  deliveryAddress,
+  realTimeTracking = false
 }) => {
   // Referência para o elemento do mapa
   const mapRef = useRef<HTMLDivElement>(null);
@@ -23,6 +26,12 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   const [restaurant] = useState({ lat: -23.550520, lng: -46.633308 });
   // Estado para armazenar as coordenadas do cliente (ponto de chegada)
   const [customer] = useState({ lat: -23.563895, lng: -46.654124 });
+  // Estado para armazenar o timestamp da última atualização
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  // Tempo estimado total da entrega em milissegundos (15 minutos)
+  const totalDeliveryTimeMs = 15 * 60 * 1000;
+  // Referência para o intervalo de atualização
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Efeito para animar o progresso da entrega
   useEffect(() => {
@@ -32,19 +41,45 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
       return;
     }
     
-    // Caso contrário, simule o progresso do entregador
-    const interval = setInterval(() => {
-      setDeliveryProgress(prev => {
-        // Incrementa o progresso em pequenos passos
-        const newProgress = prev + 0.5;
-        // Se chegar a 95%, pare (deixamos os últimos 5% para quando realmente for entregue)
-        return newProgress >= 95 ? 95 : newProgress;
-      });
-    }, 500);
-    
-    // Limpe o intervalo quando o componente for desmontado
-    return () => clearInterval(interval);
-  }, [status]);
+    // Caso contrário, simule o progresso do entregador em tempo real
+    if (realTimeTracking) {
+      const startTime = Date.now() - (deliveryProgress / 100) * totalDeliveryTimeMs;
+      
+      // Função para atualizar o progresso
+      const updateProgress = () => {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min((elapsedTime / totalDeliveryTimeMs) * 100, 95);
+        setDeliveryProgress(progress);
+        setLastUpdateTime(Date.now());
+      };
+      
+      // Atualiza inicialmente
+      updateProgress();
+      
+      // Configura um intervalo para atualização frequente (a cada 1 segundo)
+      intervalRef.current = setInterval(updateProgress, 1000);
+      
+      // Limpe o intervalo quando o componente for desmontado
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    } else {
+      // Comportamento original para compatibilidade
+      const interval = setInterval(() => {
+        setDeliveryProgress(prev => {
+          // Incrementa o progresso em pequenos passos
+          const newProgress = prev + 0.5;
+          // Se chegar a 95%, pare (deixamos os últimos 5% para quando realmente for entregue)
+          return newProgress >= 95 ? 95 : newProgress;
+        });
+      }, 500);
+      
+      // Limpe o intervalo quando o componente for desmontado
+      return () => clearInterval(interval);
+    }
+  }, [status, realTimeTracking]);
   
   // Calcule a posição atual do entregador com base no progresso
   const getCurrentPosition = () => {
@@ -57,10 +92,30 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   // Obtenha a posição atual do entregador
   const currentPosition = getCurrentPosition();
   
+  // Calcula o tempo restante estimado
+  const getRemainingTime = () => {
+    if (status === 'delivered') return '0 min';
+    
+    const progressPercentage = deliveryProgress / 100;
+    const remainingPercentage = 1 - progressPercentage;
+    const remainingTimeMs = remainingPercentage * totalDeliveryTimeMs;
+    const remainingMinutes = Math.ceil(remainingTimeMs / (60 * 1000));
+    
+    return `${remainingMinutes} min`;
+  };
+  
   return (
     <div className="mt-4 mb-6">
       <div className="bg-gray-100 rounded-lg p-1">
-        <h3 className="text-sm font-medium mb-2 px-2">Acompanhe o entregador no mapa</h3>
+        <h3 className="text-sm font-medium mb-2 px-2">
+          Acompanhe o entregador no mapa
+          {realTimeTracking && (
+            <span className="text-xs text-green-600 ml-2">
+              Sincronizado em tempo real
+              <span className="inline-block animate-pulse ml-1">•</span>
+            </span>
+          )}
+        </h3>
         
         {/* Container do mapa */}
         <div 
@@ -123,14 +178,14 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               <span className="absolute mt-8 text-xs font-medium">Seu endereço</span>
             </div>
             
-            {/* Marcador do entregador */}
+            {/* Marcador do entregador com animação suave */}
             <div 
               className="absolute flex items-center justify-center z-10"
               style={{
                 top: `${50}%`,
                 left: `${20 + 60 * deliveryProgress / 100}%`,
                 transform: 'translate(-50%, -50%)',
-                transition: 'left 0.5s ease-in-out'
+                transition: 'left 0.5s ease-out'
               }}
             >
               <div className="p-1 bg-purple-600 rounded-full animate-pulse">
@@ -146,7 +201,14 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           {status === 'delivered' ? (
             <p>Seu pedido foi entregue com sucesso!</p>
           ) : (
-            <p>Seu pedido está a caminho. Tempo estimado restante: {Math.max(5, 30 - Math.floor(deliveryProgress / 3))} min</p>
+            <div>
+              <p>Seu pedido está a caminho. Tempo estimado restante: {getRemainingTime()}</p>
+              {realTimeTracking && (
+                <p className="mt-1 text-xs text-green-600">
+                  Última atualização: {new Date(lastUpdateTime).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
           )}
           {deliveryAddress && (
             <p className="mt-1">Endereço de entrega: {deliveryAddress}</p>
