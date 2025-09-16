@@ -122,9 +122,9 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <Link to="/auth" className="text-sm text-red-600 hover:text-red-700">
-                Entrar / Cadastrar
-              </Link>
+              <div className="text-sm text-gray-500">
+                Faça login para acessar todas as funcionalidades
+              </div>
             )}
           </div>
         </div>

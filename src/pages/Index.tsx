@@ -136,17 +136,11 @@ const Index: React.FC = () => {
             </div>
           )}
           
-          {/* Auth Call to Action */}
+          {/* Auth Message for Non-Logged Users */}
           {!user && !loading && (
             <div className="mb-6 p-6 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg border border-primary/10">
-              <h2 className="text-xl font-semibold text-primary mb-2">Crie sua conta personalizada</h2>
-              <p className="text-muted-foreground mb-4">Faça login para ter acesso completo aos restaurantes e criar seu ambiente personalizado</p>
-              <Link 
-                to="/auth" 
-                className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Entrar ou Criar Conta
-              </Link>
+              <h2 className="text-xl font-semibold text-primary mb-2">Ambiente Personalizado Disponível</h2>
+              <p className="text-muted-foreground">Crie sua conta para ter acesso completo aos restaurantes e personalizar sua experiência</p>
             </div>
           )}
           

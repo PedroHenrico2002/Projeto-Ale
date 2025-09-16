@@ -7,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { profileService } from '@/services/supabaseService';
+import { profileService, orderService } from '@/services/supabaseService';
+import { UserAddresses } from '@/components/profile/UserAddresses';
+import { UserPaymentMethods } from '@/components/profile/UserPaymentMethods';
 import { Navigate } from 'react-router-dom';
+import { ShoppingBag, Heart } from 'lucide-react';
+import { favoritesService } from '@/services/favoritesService';
 
 export const Profile: React.FC = () => {
   const { user, loading, signOut } = useAuth();
@@ -17,23 +22,48 @@ export const Profile: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
-        try {
-          const userProfile = await profileService.getProfile(user.id);
-          setProfile(userProfile);
-          setDisplayName(userProfile.display_name || '');
-          setPhone(userProfile.phone || '');
-        } catch (error) {
-          console.error('Erro ao buscar perfil:', error);
-        }
-      }
-    };
-
-    fetchProfile();
+    if (user) {
+      fetchProfile();
+      fetchOrders();
+      fetchFavorites();
+    }
   }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    try {
+      const userProfile = await profileService.getProfile(user.id);
+      setProfile(userProfile);
+      setDisplayName(userProfile.display_name || '');
+      setPhone(userProfile.phone || '');
+    } catch (error) {
+      console.error('Erro ao buscar perfil:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    if (!user) return;
+    try {
+      const userOrders = await orderService.getByUserId(user.id);
+      setOrders(userOrders);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos:', error);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+    try {
+      const userFavorites = await favoritesService.getByUserId(user.id);
+      setFavorites(userFavorites);
+    } catch (error) {
+      console.error('Erro ao buscar favoritos:', error);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +108,8 @@ export const Profile: React.FC = () => {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         <div className="page-container pt-20 pb-16">
-          <div className="max-w-2xl mx-auto">
-            <Card>
+          <div className="max-w-4xl mx-auto">
+            <Card className="mb-6">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
                   <Avatar className="h-20 w-20">
@@ -91,87 +121,163 @@ export const Profile: React.FC = () => {
                 </div>
                 <CardTitle className="text-2xl">Meu Perfil</CardTitle>
                 <CardDescription>
-                  Gerencie suas informações pessoais e preferências
+                  Ambiente personalizado sincronizado com o sistema
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-6">
+              <CardContent>
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={user.email || ''}
-                      disabled
-                      className="bg-muted"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={user.email || ''}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Nome de exibição</Label>
+                      <Input
+                        id="displayName"
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="Como você gostaria de ser chamado?"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="(11) 99999-9999"
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Nome de exibição</Label>
-                    <Input
-                      id="displayName"
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Como você gostaria de ser chamado?"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="(11) 99999-9999"
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={updating}>
+                  <Button type="submit" disabled={updating}>
                     {updating ? 'Salvando...' : 'Salvar Alterações'}
                   </Button>
                 </form>
 
-                <Separator />
+                <Separator className="my-6" />
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Ambiente Personalizado</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="p-4">
-                      <h4 className="font-medium text-primary">Seus Pedidos</h4>
-                      <p className="text-sm text-muted-foreground">Histórico e pedidos ativos</p>
-                    </Card>
-                    <Card className="p-4">
-                      <h4 className="font-medium text-primary">Favoritos</h4>
-                      <p className="text-sm text-muted-foreground">Restaurantes e pratos preferidos</p>
-                    </Card>
-                    <Card className="p-4">
-                      <h4 className="font-medium text-primary">Endereços</h4>
-                      <p className="text-sm text-muted-foreground">Locais de entrega salvos</p>
-                    </Card>
-                    <Card className="p-4">
-                      <h4 className="font-medium text-primary">Preferências</h4>
-                      <p className="text-sm text-muted-foreground">Configurações personalizadas</p>
-                    </Card>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold">Conta Sincronizada</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Todos os seus dados estão integrados com o Supabase
+                    </p>
                   </div>
-                </div>
-
-                <Separator />
-
-                <div className="pt-4">
-                  <Button 
-                    variant="destructive" 
-                    onClick={signOut}
-                    className="w-full"
-                  >
+                  <Button variant="destructive" onClick={signOut}>
                     Sair da Conta
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            <Tabs defaultValue="orders" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="orders">Pedidos</TabsTrigger>
+                <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+                <TabsTrigger value="addresses">Endereços</TabsTrigger>
+                <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="orders">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingBag className="h-5 w-5" />
+                      Seus Pedidos
+                    </CardTitle>
+                    <CardDescription>
+                      Histórico de pedidos sincronizado com o sistema
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {orders.length > 0 ? (
+                      <div className="space-y-4">
+                        {orders.slice(0, 3).map((order: any) => (
+                          <div key={order.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium">Pedido #{order.id.substring(0, 8)}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {order.restaurants?.name}
+                                </p>
+                                <p className="text-sm">Status: {order.status}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium">R$ {order.total}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(order.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhum pedido encontrado</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="favorites">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="h-5 w-5" />
+                      Restaurantes Favoritos
+                    </CardTitle>
+                    <CardDescription>
+                      Seus restaurantes favoritos sincronizados
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {favorites.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {favorites.map((favorite: any) => (
+                          <div key={favorite.id} className="border rounded-lg p-4">
+                            <h4 className="font-medium">{favorite.restaurants.name}</h4>
+                            <p className="text-sm text-muted-foreground">{favorite.restaurants.cuisine}</p>
+                            <div className="flex items-center text-yellow-500 text-sm mt-1">
+                              <span className="mr-1">★</span>
+                              <span>{favorite.restaurants.rating}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhum favorito adicionado</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="addresses">
+                <UserAddresses />
+              </TabsContent>
+
+              <TabsContent value="payments">
+                <UserPaymentMethods />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

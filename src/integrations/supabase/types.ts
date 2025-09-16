@@ -210,6 +210,42 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          card_name: string | null
+          card_number: string | null
+          created_at: string
+          expiry_date: string | null
+          id: string
+          is_default: boolean | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_name?: string | null
+          card_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_default?: boolean | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_name?: string | null
+          card_number?: string | null
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_default?: boolean | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -305,6 +341,35 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          restaurant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          restaurant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          restaurant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
