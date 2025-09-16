@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { profileService } from '@/services/supabaseService';
 
 // Categorias
 const categories = [
@@ -103,26 +105,48 @@ const dessertRestaurants = [
 ];
 
 const Index: React.FC = () => {
+  const { user, loading } = useAuth();
   const [userName, setUserName] = useState('');
   
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setUserName(user.name);
-    }
-  }, []);
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const profile = await profileService.getProfile(user.id);
+          setUserName(profile.display_name || profile.name);
+        } catch (error) {
+          console.error('Erro ao buscar perfil:', error);
+          setUserName(user.email?.split('@')[0] || 'Usuário');
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   return (
     <Layout>
       <div className="pt-20 pb-16">
         <div className="page-container">
           {/* Welcome Message */}
-          {userName && (
-            <div className="mb-6 p-4 bg-green-50 rounded-lg">
-              <h2 className="text-lg font-medium text-green-800">Bem-vindo, {userName}!</h2>
-              <p className="text-sm text-green-600">O que você deseja pedir hoje?</p>
+          {user && userName && (
+            <div className="mb-6 p-4 glass-effect rounded-lg border border-primary/20">
+              <h2 className="text-lg font-medium text-primary">Bem-vindo, {userName}!</h2>
+              <p className="text-sm text-muted-foreground">O que você deseja pedir hoje?</p>
+            </div>
+          )}
+          
+          {/* Auth Call to Action */}
+          {!user && !loading && (
+            <div className="mb-6 p-6 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg border border-primary/10">
+              <h2 className="text-xl font-semibold text-primary mb-2">Crie sua conta personalizada</h2>
+              <p className="text-muted-foreground mb-4">Faça login para ter acesso completo aos restaurantes e criar seu ambiente personalizado</p>
+              <Link 
+                to="/auth" 
+                className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Entrar ou Criar Conta
+              </Link>
             </div>
           )}
           

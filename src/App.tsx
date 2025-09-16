@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 // Public pages
 import { Auth } from "@/pages/Auth";
+import { Profile } from "@/pages/Profile";
 import Index from "@/pages/Index";
 import Restaurants from "@/pages/Restaurants";
 import RestaurantDetails from "@/pages/RestaurantDetails";
@@ -52,6 +53,7 @@ const App = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/" element={<Index />} />
           <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/restaurants/:restaurantId" element={<RestaurantDetails />} />

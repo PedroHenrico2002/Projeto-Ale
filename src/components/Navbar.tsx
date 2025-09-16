@@ -10,28 +10,19 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, User, ChevronDown, ShoppingBag, Settings } from 'lucide-react';
 import { AddressDialog } from './AddressDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 export const Navbar: React.FC = () => {
+  const { user, signOut } = useAuth();
   // Estados locais para gerenciar informações do usuário e endereço
   const [address, setAddress] = useState('Rua Augusta, 1500');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const navigate = useNavigate();
   
   /**
-   * Effect para carregar dados do usuário e endereço padrão
-   * quando o componente é montado
+   * Effect para carregar endereço padrão quando o componente é montado
    */
   useEffect(() => {
-    // Verifica se o usuário está logado (dados no localStorage)
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setIsLoggedIn(true);
-      setUserName(user.name);
-    }
-    
     // Carrega o endereço padrão salvo (se existir)
     const storedAddresses = localStorage.getItem('savedAddresses');
     if (storedAddresses) {
@@ -48,10 +39,8 @@ export const Navbar: React.FC = () => {
    * Função para realizar o logout do usuário
    * Remove dados da sessão e retorna à página inicial
    */
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setIsLoggedIn(false);
-    setUserName('');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
   
@@ -119,10 +108,12 @@ export const Navbar: React.FC = () => {
           
           {/* Área de autenticação */}
           <div className="flex items-center space-x-4">
-            {isLoggedIn ? (
+            {user ? (
               <div className="flex items-center space-x-2">
-                <User size={18} className="text-red-600" />
-                <span className="text-sm text-gray-800">{userName}</span>
+                <Link to="/profile" className="flex items-center space-x-2 hover:text-red-600 transition-colors">
+                  <User size={18} className="text-red-600" />
+                  <span className="text-sm text-gray-800">Perfil</span>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="text-sm text-red-600 hover:text-red-700 ml-2"
@@ -131,7 +122,7 @@ export const Navbar: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="text-sm text-red-600 hover:text-red-700">
+              <Link to="/auth" className="text-sm text-red-600 hover:text-red-700">
                 Entrar / Cadastrar
               </Link>
             )}
