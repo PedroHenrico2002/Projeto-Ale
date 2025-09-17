@@ -26,6 +26,9 @@ import OrderTracking from "@/pages/OrderTracking";
 import OrderDetails from "@/pages/OrderDetails";
 import Orders from "@/pages/Orders";
 
+// Create QueryClient outside component to prevent recreation
+const queryClient = new QueryClient();
+
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -42,7 +45,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  const queryClient = new QueryClient();
   
   return (
     <QueryClientProvider client={queryClient}>
