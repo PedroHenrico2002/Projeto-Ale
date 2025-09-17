@@ -1,88 +1,29 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Layout } from '@/components/Layout';
 import { LocationSelector } from '@/components/LocationSelector';
-import { OrderSummary } from '@/components/OrderSummary';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ChevronRight, Minus, Plus, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
-
-// Mock data
-const cartItems = [
-  {
-    id: '1',
-    name: 'Legendary Burger',
-    quantity: 2,
-    unitPrice: '$12.99',
-    totalPrice: '$25.98',
-    options: ['Large (+$3.00)', 'Extra Cheese (+$1.50)'],
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    restaurantName: 'Burger Heaven',
-  },
-  {
-    id: '2',
-    name: 'Garlic Parmesan Fries',
-    quantity: 1,
-    unitPrice: '$5.99',
-    totalPrice: '$5.99',
-    options: ['Large (+$2.00)'],
-    image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=80',
-    restaurantName: 'Burger Heaven',
-  },
-];
+import { useCart } from '@/contexts/CartContext';
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState(cartItems);
-  const [address, setAddress] = useState('');
+  const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
   
   const handleLocationSelect = (selectedAddress: string) => {
-    setAddress(selectedAddress);
-    toast.success('Delivery location updated!');
-  };
-  
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
-    }
-    
-    setItems(items.map(item => 
-      item.id === id ? { ...item, quantity: newQuantity } : item
-    ));
-  };
-  
-  const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
-    toast.success('Item removed from cart!');
-  };
-  
-  const clearCart = () => {
-    setItems([]);
-    toast.success('Cart cleared!');
+    toast.success('Localização de entrega atualizada!');
   };
   
   const handleCheckout = () => {
-    if (!address) {
-      toast.error('Please select a delivery address first');
-      return;
-    }
-    
     navigate('/checkout');
   };
   
   // Calculate totals
-  const subtotal = '$31.97';
-  const tax = '$2.88';
-  const deliveryFee = '$3.99';
-  const total = '$38.84';
-  
-  const orderSummaryItems = items.map(item => ({
-    id: item.id,
-    name: item.name,
-    quantity: item.quantity,
-    price: item.totalPrice,
-  }));
+  const subtotal = getTotalPrice();
+  const deliveryFee = 5.99;
+  const tax = subtotal * 0.1;
+  const total = subtotal + deliveryFee + tax;
   
   // Check if cart is empty
   const isCartEmpty = items.length === 0;
@@ -93,27 +34,27 @@ const Cart: React.FC = () => {
         <div className="page-container">
           <div className="mb-6">
             <Link
-              to="/"
+              to="/restaurants"
               className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft size={16} className="mr-1" />
-              <span>Continue Shopping</span>
+              <span>Continuar Comprando</span>
             </Link>
           </div>
           
-          <h1 className="heading-lg mb-6">Your Cart</h1>
+          <h1 className="heading-lg mb-6">Seu Carrinho</h1>
           
           {isCartEmpty ? (
             <div className="bg-card rounded-xl border border-border p-8 text-center">
-              <h2 className="text-lg font-medium mb-3">Your cart is empty</h2>
+              <h2 className="text-lg font-medium mb-3">Seu carrinho está vazio</h2>
               <p className="text-muted-foreground mb-6">
-                Looks like you haven't added any items to your cart yet.
+                Parece que você ainda não adicionou nenhum item ao seu carrinho.
               </p>
               <Button 
                 className="bg-accent hover:bg-accent/90 text-accent-foreground"
                 onClick={() => navigate('/restaurants')}
               >
-                Browse Restaurants
+                Ver Restaurantes
               </Button>
             </div>
           ) : (
@@ -122,81 +63,91 @@ const Cart: React.FC = () => {
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-card rounded-xl border border-border overflow-hidden animate-fade-in">
                   <div className="p-5 flex items-center justify-between border-b border-border">
-                    <h2 className="font-medium">Cart Items ({items.length})</h2>
+                    <h2 className="font-medium">Itens do Carrinho ({items.length})</h2>
                     <button
                       className="text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center"
                       onClick={clearCart}
                     >
                       <Trash2 size={14} className="mr-1" />
-                      <span>Clear All</span>
+                      <span>Limpar Tudo</span>
                     </button>
                   </div>
                   
                   <div className="divide-y divide-border">
-                    {items.map((item) => (
-                      <div key={item.id} className="p-5 flex items-center">
-                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        
-                        <div className="ml-4 flex-1">
-                          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                            <div>
-                              <h3 className="font-medium text-lg mb-1">{item.name}</h3>
-                              <p className="text-sm text-muted-foreground mb-1">{item.restaurantName}</p>
-                              
-                              <div className="text-sm text-muted-foreground">
-                                {item.options.map((option, index) => (
-                                  <span key={index} className="mr-2">{option}</span>
-                                ))}
+                    {items.map((item) => {
+                      const optionsPrice = item.options?.reduce((total, opt) => total + opt.price, 0) || 0;
+                      const itemTotalPrice = (item.price + optionsPrice) * item.quantity;
+                      
+                      return (
+                        <div key={item.id} className="p-5 flex items-center">
+                          <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                            <img 
+                              src={item.image} 
+                              alt={item.name} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          <div className="ml-4 flex-1">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <h3 className="font-medium text-lg mb-1">{item.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-1">{item.restaurantName}</p>
+                                
+                                {item.options && item.options.length > 0 && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {item.options.map((option, index) => (
+                                      <span key={index} className="mr-2">
+                                        {option.name}: {Array.isArray(option.value) ? option.value.join(', ') : option.value}
+                                        {option.price > 0 && ` (+R$${option.price.toFixed(2)})`}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            
-                            <div className="mt-3 md:mt-0 md:text-right">
-                              <div className="text-sm mb-2">
-                                <span className="text-muted-foreground">{item.unitPrice} × {item.quantity} = </span>
-                                <span className="font-medium">{item.totalPrice}</span>
-                              </div>
                               
-                              <div className="flex items-center space-x-3">
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                >
-                                  <Minus size={14} />
-                                </Button>
+                              <div className="mt-3 md:mt-0 md:text-right">
+                                <div className="text-sm mb-2">
+                                  <span className="text-muted-foreground">R${(item.price + optionsPrice).toFixed(2)} × {item.quantity} = </span>
+                                  <span className="font-medium">R${itemTotalPrice.toFixed(2)}</span>
+                                </div>
                                 
-                                <span className="text-sm font-medium">{item.quantity}</span>
-                                
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
-                                  className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                >
-                                  <Plus size={14} />
-                                </Button>
-                                
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => removeItem(item.id)}
-                                >
-                                  <Trash2 size={14} />
-                                </Button>
+                                <div className="flex items-center space-x-3">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  >
+                                    <Minus size={14} />
+                                  </Button>
+                                  
+                                  <span className="text-sm font-medium">{item.quantity}</span>
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="h-8 w-8"
+                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  >
+                                    <Plus size={14} />
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={() => removeItem(item.id)}
+                                  >
+                                    <Trash2 size={14} />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
                 
@@ -205,26 +156,48 @@ const Cart: React.FC = () => {
               
               {/* Order Summary */}
               <div className="lg:col-span-1">
-                <OrderSummary
-                  items={orderSummaryItems}
-                  subtotal={subtotal}
-                  tax={tax}
-                  deliveryFee={deliveryFee}
-                  total={total}
-                  expanded={true}
-                  onCheckout={handleCheckout}
-                />
+                <div className="bg-card rounded-xl border border-border p-5 animate-fade-in">
+                  <h3 className="font-medium mb-4">Resumo do Pedido</h3>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>R${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Taxa de Entrega</span>
+                      <span>R${deliveryFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Impostos</span>
+                      <span>R${tax.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-border pt-3">
+                      <div className="flex justify-between font-medium">
+                        <span>Total</span>
+                        <span>R${total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                    onClick={handleCheckout}
+                  >
+                    Finalizar Pedido
+                  </Button>
+                </div>
                 
                 <div className="mt-6 bg-card rounded-xl border border-border p-5 animate-fade-in">
-                  <h3 className="font-medium mb-4">Have a Promo Code?</h3>
+                  <h3 className="font-medium mb-4">Tem um Código Promocional?</h3>
                   <div className="flex">
                     <input
                       type="text"
-                      placeholder="Enter promo code"
-                      className="flex-1 rounded-l-md border border-r-0 border-input focus:border-accent focus:ring-1 focus:ring-accent"
+                      placeholder="Digite o código promocional"
+                      className="flex-1 rounded-l-md border border-r-0 border-input focus:border-accent focus:ring-1 focus:ring-accent px-3 py-2"
                     />
                     <Button className="rounded-l-none bg-accent hover:bg-accent/90 text-accent-foreground">
-                      Apply
+                      Aplicar
                     </Button>
                   </div>
                 </div>
@@ -234,7 +207,7 @@ const Cart: React.FC = () => {
                     variant="outline" 
                     className="w-full flex items-center justify-center"
                   >
-                    <span>Add More Items</span>
+                    <span>Adicionar Mais Itens</span>
                     <ChevronRight size={16} className="ml-1" />
                   </Button>
                 </Link>

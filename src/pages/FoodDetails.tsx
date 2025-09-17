@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, ShoppingCart, Star, Clock, Store, ChevronLeft } from 'lucide-react';
 import { toast } from '@/lib/toast';
+import { useCart } from '@/contexts/CartContext';
 
 // Mock data
 const foodDetails = {
@@ -47,6 +48,7 @@ const foodDetails = {
 const FoodDetails: React.FC = () => {
   const { restaurantId, foodId } = useParams();
   const navigate = useNavigate();
+  const { addItem } = useCart();
   
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -89,7 +91,28 @@ const FoodDetails: React.FC = () => {
   };
   
   const addToCart = () => {
-    toast.success('Added to cart!');
+    const selectedOptionsForCart = foodDetails.options.map(option => ({
+      name: option.name,
+      value: selectedOptions[option.name],
+      price: option.type === 'single' 
+        ? parseFloat(option.choices.find(c => c.id === selectedOptions[option.name])?.price.replace(/[^0-9.]/g, '') || '0')
+        : (selectedOptions[option.name] as string[]).reduce((total, choiceId) => {
+            const choice = option.choices.find(c => c.id === choiceId);
+            return total + parseFloat(choice?.price.replace(/[^0-9.]/g, '') || '0');
+          }, 0)
+    }));
+
+    const itemToAdd = {
+      id: `${foodDetails.id}_${Date.now()}`, // Unique ID for cart item
+      restaurantId: foodDetails.restaurantId,
+      restaurantName: foodDetails.restaurant.name,
+      name: foodDetails.name,
+      image: foodDetails.images[0],
+      price: parseFloat(foodDetails.price.replace(/[^0-9.]/g, '')),
+      options: selectedOptionsForCart
+    };
+
+    addItem(itemToAdd);
   };
   
   return (

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { OrderSummary } from '@/components/OrderSummary';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Calendar, Check, ChevronLeft, CreditCard, MapPin, Shield } from 'lucide-react';
@@ -8,6 +7,7 @@ import { toast } from '@/lib/toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { orderService } from '@/utils/database/orderService';
+import { useCart } from '@/contexts/CartContext';
 
 // Mock data
 const deliveryAddress = '350 Fifth Avenue, New York, NY 10118';
@@ -62,9 +62,14 @@ const deliveryTimes = [
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { items, getTotalPrice, clearCart, getRestaurantId } = useCart();
+  
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
   const [deliveryOption, setDeliveryOption] = useState(deliveryTimes[0].id);
   const [scheduledTime, setScheduledTime] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [loading, setLoading] = useState(false);
   
   const handlePlaceOrder = async () => {
     const { user } = useAuth();
@@ -271,13 +276,43 @@ const Checkout: React.FC = () => {
             
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <OrderSummary
-                items={orderSummaryItems}
-                subtotal="$31.97"
-                tax="$2.88"
-                deliveryFee="$3.99"
-                total="$38.84"
-              />
+              <div className="bg-card rounded-xl border border-border p-5 animate-fade-in">
+                <h3 className="font-medium mb-4">Resumo do Pedido</h3>
+                
+                <div className="space-y-3 mb-4">
+                  {items.map((item) => {
+                    const optionsPrice = item.options?.reduce((total, opt) => total + opt.price, 0) || 0;
+                    const itemTotal = (item.price + optionsPrice) * item.quantity;
+                    
+                    return (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>{item.name} x{item.quantity}</span>
+                        <span>R${itemTotal.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="border-t border-border pt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>R${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Taxa de Entrega</span>
+                      <span>R${deliveryFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Impostos</span>
+                      <span>R${tax.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-border pt-2">
+                      <div className="flex justify-between font-medium">
+                        <span>Total</span>
+                        <span>R${total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               
               <div className="mt-6 space-y-4">
                 <Button 

@@ -5,6 +5,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { CartProvider } from "@/contexts/CartContext";
+import { CartButton } from "@/components/CartButton";
 
 // Public pages
 import { Auth } from "@/pages/Auth";
@@ -48,34 +50,38 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        
-        <Routes>
-          {/* Public routes */}
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/" element={<Index />} />
-          <Route path="/restaurants" element={<Restaurants />} />
-          <Route path="/restaurants/:restaurantId" element={<RestaurantDetails />} />
-          <Route path="/food/:restaurantId/:foodId" element={<FoodDetails />} />
-          <Route path="/documentation" element={<SystemDocumentation />} />
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
           
-          {/* Protected routes */}
-          <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-          <Route path="/confirm-order" element={<ProtectedRoute><ConfirmOrder /></ProtectedRoute>} />
-          <Route path="/order-complete" element={<ProtectedRoute><OrderComplete /></ProtectedRoute>} />
-          <Route path="/tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
-          <Route path="/order-details" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><CrudManager /></ProtectedRoute>} />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/restaurants" element={<Restaurants />} />
+            <Route path="/restaurants/:restaurantId" element={<RestaurantDetails />} />
+            <Route path="/food/:restaurantId/:foodId" element={<FoodDetails />} />
+            <Route path="/documentation" element={<SystemDocumentation />} />
+            
+            {/* Protected routes */}
+            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/confirm-order" element={<ProtectedRoute><ConfirmOrder /></ProtectedRoute>} />
+            <Route path="/order-complete" element={<ProtectedRoute><OrderComplete /></ProtectedRoute>} />
+            <Route path="/tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
+            <Route path="/order-details" element={<ProtectedRoute><OrderDetails /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><CrudManager /></ProtectedRoute>} />
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
           
-          {/* 404 route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
+          <CartButton />
+        </TooltipProvider>
+      </CartProvider>
     </QueryClientProvider>
   );
 };
