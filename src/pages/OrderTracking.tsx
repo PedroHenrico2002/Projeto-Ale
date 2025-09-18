@@ -4,48 +4,109 @@ import { OrderTracker } from '@/components/OrderTracker';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Clock, MapPin, Phone, MessageCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/lib/toast';
+
+interface OrderData {
+  id: string;
+  items: any[];
+  total: number;
+  subtotal: number;
+  delivery_fee: number;
+  restaurant_id: string;
+  delivery_address_id: string;
+  status: string;
+  created_at: string;
+}
 
 const OrderTracking: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [orderStatus, setOrderStatus] = useState<'preparing' | 'ready' | 'delivering' | 'delivered'>('preparing');
   const [estimatedTime, setEstimatedTime] = useState('25-35 min');
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const orderId = location.state?.orderId || '12345';
-  
-  // Simulate status progression
+  const orderId = location.state?.orderId || 'demo-order';
+
   useEffect(() => {
-    const statusProgression = ['preparing', 'ready', 'delivering', 'delivered'] as const;
-    let currentIndex = 0;
-    
-    const interval = setInterval(() => {
-      if (currentIndex < statusProgression.length - 1) {
-        currentIndex++;
-        setOrderStatus(statusProgression[currentIndex]);
-        
-        // Update estimated time based on status
-        switch (statusProgression[currentIndex]) {
-          case 'ready':
-            setEstimatedTime('10-15 min');
-            break;
-          case 'delivering':
-            setEstimatedTime('5-10 min');
-            break;
-          case 'delivered':
-            setEstimatedTime('Entregue!');
-            break;
-        }
-      } else {
-        clearInterval(interval);
-        // Navigate to completion after delivery
-        setTimeout(() => {
-          navigate('/orders');
-        }, 3000);
+    // Fetch order data from database
+    const fetchOrder = async () => {
+      if (orderId === 'demo-order') {
+        // Demo data
+        setOrderData({
+          id: orderId,
+          items: [
+            { name: 'Hambúrguer Especial', quantity: 2, price: 12.99 },
+            { name: 'Batata Frita', quantity: 1, price: 5.99 }
+          ],
+          total: 37.96,
+          subtotal: 31.97,
+          delivery_fee: 5.99,
+          restaurant_id: 'demo-restaurant',
+          delivery_address_id: 'demo-address',
+          status: 'preparing',
+          created_at: new Date().toISOString()
+        });
+        setLoading(false);
+        return;
       }
-    }, 10000); // Change status every 10 seconds for demo
-    
-    return () => clearInterval(interval);
-  }, [navigate]);
+
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .eq('user_id', user?.id)
+          .single();
+
+        if (error) throw error;
+        
+        setOrderData(data as OrderData);
+        setOrderStatus(data.status as any);
+      } catch (error) {
+        console.error('Erro ao buscar dados do pedido:', error);
+        toast.error('Erro ao carregar dados do pedido');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, user]);
+  
+  if (loading) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-16">
+          <div className="page-container">
+            <div className="text-center">
+              <p>Carregando dados do pedido...</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!orderData) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-16">
+          <div className="page-container">
+            <div className="text-center">
+              <p>Pedido não encontrado.</p>
+              <Button onClick={() => navigate('/orders')} className="mt-4">
+                Ver Todos os Pedidos
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   const getStatusMessage = () => {
     switch (orderStatus) {
@@ -131,26 +192,24 @@ const OrderTracking: React.FC = () => {
                 <h3 className="font-medium mb-4">Resumo do Pedido</h3>
                 
                 <div className="space-y-3 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span>2x Hambúrguer Especial</span>
-                    <span>R$25,98</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>1x Batata Frita</span>
-                    <span>R$5,99</span>
-                  </div>
+                  {orderData.items.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span>{item.quantity}x {item.name}</span>
+                      <span>R${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
                   <div className="border-t border-border pt-3">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>R$31,97</span>
+                      <span>R${orderData.subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Taxa de Entrega</span>
-                      <span>R$5,99</span>
+                      <span>R${orderData.delivery_fee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-medium">
                       <span>Total</span>
-                      <span>R$37,96</span>
+                      <span>R${orderData.total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

@@ -78,13 +78,19 @@ const Checkout: React.FC = () => {
   const total = subtotal + deliveryFee + tax;
   
   const handlePlaceOrder = async () => {
-    const { user } = useAuth();
-    
     if (!user) {
       toast.error('Você precisa estar logado para fazer um pedido');
       navigate('/auth');
       return;
     }
+
+    if (items.length === 0) {
+      toast.error('Seu carrinho está vazio');
+      navigate('/cart');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       // Get user's default address or use first available address
@@ -100,21 +106,28 @@ const Checkout: React.FC = () => {
         return;
       }
 
-      const deliveryAddress = addresses[0];
+      const address = addresses[0];
+      const restaurantId = getRestaurantId();
 
-      // Create order data
+      if (!restaurantId) {
+        toast.error('Erro: Restaurante não identificado');
+        return;
+      }
+
+      // Create order data using cart items
       const orderData = {
-        restaurant_id: '1', // This should come from the actual restaurant
-        delivery_address_id: deliveryAddress.id,
-        items: orderSummaryItems.map(item => ({
+        restaurant_id: restaurantId,
+        delivery_address_id: address.id,
+        items: items.map(item => ({
           id: item.id,
           name: item.name,
           quantity: item.quantity,
-          price: parseFloat(item.price.replace('$', ''))
+          price: item.price,
+          options: item.options || []
         })),
-        subtotal: 31.97,
-        delivery_fee: 3.99,
-        total: 38.84,
+        subtotal: subtotal,
+        delivery_fee: deliveryFee,
+        total: total,
         payment_method: selectedPayment,
         notes: ''
       };
@@ -122,11 +135,16 @@ const Checkout: React.FC = () => {
       // Save order to database
       const order = await orderService.create(orderData);
       
+      // Clear cart after successful order
+      clearCart();
+      
       toast.success('Pedido realizado com sucesso!');
-      navigate('/order-complete', { state: { orderId: order.id } });
+      navigate('/order-complete', { state: { orderId: order.id, orderData } });
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
       toast.error('Erro ao finalizar pedido. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -321,13 +339,14 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div className="mt-6 space-y-4">
-                  <Button 
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground h-12"
-                    onClick={handlePlaceOrder}
-                  >
-                    <Check size={16} className="mr-2" />
-                    <span>Place Order</span>
-                  </Button>
+                <Button 
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground h-12"
+                  onClick={handlePlaceOrder}
+                  disabled={loading || items.length === 0}
+                >
+                  <Check size={16} className="mr-2" />
+                  <span>{loading ? 'Processando...' : 'Finalizar Pedido'}</span>
+                </Button>
                   
                   <p className="text-xs text-muted-foreground flex items-center justify-center">
                     <Shield size={14} className="mr-1" />

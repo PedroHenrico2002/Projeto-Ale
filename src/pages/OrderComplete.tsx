@@ -1,17 +1,78 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { OrderTracker } from '@/components/OrderTracker';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronRight, MapPin, ShoppingBag } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/lib/toast';
+
+interface OrderData {
+  id: string;
+  items: any[];
+  total: number;
+  restaurant_id: string;
+  delivery_address_id: string;
+  status: string;
+  created_at: string;
+}
 
 const OrderComplete: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  // Random order number
+  const orderId = location.state?.orderId;
+  const orderFromState = location.state?.orderData;
+  
+  // Random order number for display
   const orderNumber = `LF-${Math.floor(10000 + Math.random() * 90000)}`;
+
+  useEffect(() => {
+    if (!orderId) {
+      toast.error('Dados do pedido não encontrados');
+      navigate('/');
+      return;
+    }
+
+    // Fetch order data from database
+    const fetchOrder = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single();
+
+        if (error) throw error;
+        
+        setOrderData(data as OrderData);
+      } catch (error) {
+        console.error('Erro ao buscar dados do pedido:', error);
+        // Use order data from state if available
+        if (orderFromState) {
+          setOrderData({
+            id: orderId,
+            items: orderFromState.items,
+            total: orderFromState.total,
+            restaurant_id: orderFromState.restaurant_id,
+            delivery_address_id: orderFromState.delivery_address_id,
+            status: 'pending',
+            created_at: new Date().toISOString()
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, orderFromState, navigate]);
   
   // Trigger confetti effect when component mounts
   useEffect(() => {
@@ -47,6 +108,37 @@ const OrderComplete: React.FC = () => {
     
     return () => clearInterval(confettiInterval);
   }, []);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-16">
+          <div className="page-container">
+            <div className="text-center">
+              <p>Carregando dados do pedido...</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!orderData) {
+    return (
+      <Layout>
+        <div className="pt-28 pb-16">
+          <div className="page-container">
+            <div className="text-center">
+              <p>Erro ao carregar dados do pedido.</p>
+              <Button onClick={() => navigate('/')} className="mt-4">
+                Voltar ao Início
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   return (
     <Layout>
@@ -59,14 +151,14 @@ const OrderComplete: React.FC = () => {
                 <Check size={30} />
               </div>
               
-              <h1 className="heading-lg mb-3">Order Confirmed!</h1>
+              <h1 className="heading-lg mb-3">Pedido Confirmado!</h1>
               
               <p className="text-muted-foreground mb-6">
-                Your order has been placed successfully and is being prepared.
+                Seu pedido foi realizado com sucesso e está sendo preparado.
               </p>
               
               <div className="inline-block bg-secondary px-4 py-2 rounded-md text-sm">
-                <span className="text-muted-foreground">Order Number: </span>
+                <span className="text-muted-foreground">Número do Pedido: </span>
                 <span className="font-semibold">{orderNumber}</span>
               </div>
             </div>
@@ -75,32 +167,30 @@ const OrderComplete: React.FC = () => {
             <div className="space-y-8">
               <OrderTracker 
                 status="preparing"
-                estimatedDelivery="12:45 PM"
+                estimatedDelivery="25-35 min"
               />
               
               {/* Order Details */}
               <div className="bg-card rounded-xl border border-border overflow-hidden animate-fade-in">
                 <div className="p-5 border-b border-border">
-                  <h2 className="font-medium">Order Details</h2>
+                  <h2 className="font-medium">Detalhes do Pedido</h2>
                 </div>
                 
                 <div className="divide-y divide-border">
                   <div className="p-5 flex items-start">
                     <ShoppingBag size={18} className="mr-3 text-muted-foreground mt-0.5" />
-                    <div>
-                      <h3 className="font-medium mb-1">Items</h3>
+                    <div className="w-full">
+                      <h3 className="font-medium mb-1">Itens</h3>
                       <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between">
-                          <span>2× Legendary Burger</span>
-                          <span className="text-muted-foreground">$25.98</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>1× Garlic Parmesan Fries (L)</span>
-                          <span className="text-muted-foreground">$5.99</span>
-                        </li>
+                        {orderData.items.map((item: any, index: number) => (
+                          <li key={index} className="flex justify-between">
+                            <span>{item.quantity}× {item.name}</span>
+                            <span className="text-muted-foreground">R${(item.price * item.quantity).toFixed(2)}</span>
+                          </li>
+                        ))}
                         <li className="flex justify-between font-medium border-t border-border pt-2 mt-2">
                           <span>Total</span>
-                          <span>$38.84</span>
+                          <span>R${orderData.total.toFixed(2)}</span>
                         </li>
                       </ul>
                     </div>
@@ -109,8 +199,8 @@ const OrderComplete: React.FC = () => {
                   <div className="p-5 flex items-start">
                     <MapPin size={18} className="mr-3 text-muted-foreground mt-0.5" />
                     <div>
-                      <h3 className="font-medium mb-1">Delivery Address</h3>
-                      <p className="text-sm">350 Fifth Avenue, New York, NY 10118</p>
+                      <h3 className="font-medium mb-1">Endereço de Entrega</h3>
+                      <p className="text-sm">Será entregue no endereço cadastrado</p>
                     </div>
                   </div>
                 </div>
@@ -121,9 +211,9 @@ const OrderComplete: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => navigate('/tracking')}
+                  onClick={() => navigate('/tracking', { state: { orderId: orderData.id } })}
                 >
-                  <span>Track Order</span>
+                  <span>Acompanhar Pedido</span>
                   <ChevronRight size={16} className="ml-1" />
                 </Button>
                 
@@ -131,7 +221,7 @@ const OrderComplete: React.FC = () => {
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
                   onClick={() => navigate('/')}
                 >
-                  <span>Continue Shopping</span>
+                  <span>Continuar Comprando</span>
                 </Button>
               </div>
             </div>
