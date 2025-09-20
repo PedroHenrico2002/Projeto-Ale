@@ -1,15 +1,19 @@
 
 import React from 'react';
 import { 
-  CheckCircle2, AlertTriangle, TruckIcon, CookingPot, PackageCheck 
+  CheckCircle2, AlertTriangle, TruckIcon, CookingPot, PackageCheck, Clock, CheckCircle 
 } from 'lucide-react';
 
 interface OrderStatusIconProps {
-  status: 'preparing' | 'ready' | 'delivering' | 'delivered';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered';
 }
 
 const OrderStatusIcon: React.FC<OrderStatusIconProps> = ({ status }) => {
   switch (status) {
+    case 'pending':
+      return <Clock size={20} className="text-orange-500" />;
+    case 'confirmed':
+      return <CheckCircle size={20} className="text-blue-600" />;
     case 'preparing':
       return <CookingPot size={20} className="text-yellow-500" />;
     case 'ready':
@@ -23,8 +27,12 @@ const OrderStatusIcon: React.FC<OrderStatusIconProps> = ({ status }) => {
   }
 };
 
-export const getStatusText = (status: 'preparing' | 'ready' | 'delivering' | 'delivered'): string => {
+export const getStatusText = (status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivering' | 'delivered'): string => {
   switch (status) {
+    case 'pending':
+      return 'Pedido pendente';
+    case 'confirmed':
+      return 'Pedido confirmado';
     case 'preparing':
       return 'Preparando seu pedido';
     case 'ready':
