@@ -4,7 +4,7 @@ import { OrderTracker } from '@/components/OrderTracker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Clock, MapPin, Phone, ChevronLeft, ShoppingBag } from 'lucide-react';
+import { Clock, MapPin, Phone, ChevronLeft, ShoppingBag, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
@@ -31,6 +31,10 @@ const OrderTracking: React.FC = () => {
   const [restaurant, setRestaurant] = useState<any>(null);
   const [address, setAddress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [hasRated, setHasRated] = useState(false);
+  const [showRating, setShowRating] = useState(false);
 
   const orderId = location.state?.orderId;
 
@@ -55,13 +59,47 @@ const OrderTracking: React.FC = () => {
           filter: `id=eq.${orderId}`
         },
         (payload) => {
-          setOrderData(payload.new as OrderData);
+          const newOrder = payload.new as OrderData;
+          setOrderData(newOrder);
+          
+          // Show rating when order is delivered
+          if (newOrder.status === 'delivered' && !hasRated) {
+            setShowRating(true);
+          }
         }
       )
       .subscribe();
 
+    // Simulate order status progression
+    const simulateOrderProgress = () => {
+      const progressSteps = ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'];
+      let currentStep = 0;
+
+      const updateStatus = async () => {
+        if (currentStep < progressSteps.length - 1) {
+          currentStep++;
+          try {
+            await supabase
+              .from('orders')
+              .update({ status: progressSteps[currentStep] })
+              .eq('id', orderId);
+          } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+          }
+        }
+      };
+
+      // Update status every 30 seconds for demo purposes
+      const interval = setInterval(updateStatus, 30000);
+      
+      return () => clearInterval(interval);
+    };
+
+    const cleanup = simulateOrderProgress();
+
     return () => {
       subscription.unsubscribe();
+      cleanup();
     };
   }, [orderId, navigate]);
 
@@ -148,6 +186,42 @@ const OrderTracking: React.FC = () => {
         return 'Entregue';
       default:
         return '25-35 min';
+    }
+  };
+
+  const handleRating = async (ratingValue: number) => {
+    if (!orderData || !restaurant) return;
+
+    try {
+      // Update order with rating
+      await supabase
+        .from('orders')
+        .update({ rating: ratingValue })
+        .eq('id', orderData.id);
+
+      // Update restaurant average rating (simplified)
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('rating')
+        .eq('restaurant_id', restaurant.id)
+        .not('rating', 'is', null);
+
+      if (orders) {
+        const totalRating = orders.reduce((sum, order) => sum + (order.rating || 0), 0);
+        const avgRating = totalRating / orders.length;
+
+        await supabase
+          .from('restaurants')
+          .update({ rating: avgRating })
+          .eq('id', restaurant.id);
+      }
+
+      setHasRated(true);
+      setShowRating(false);
+      toast.success('Avaliação enviada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao avaliar:', error);
+      toast.error('Erro ao enviar avaliação');
     }
   };
 
@@ -324,6 +398,68 @@ const OrderTracking: React.FC = () => {
                     >
                       Ver Todos os Pedidos
                     </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Rating Card */}
+                {showRating && currentStatus === 'delivered' && !hasRated && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Avaliar Restaurante</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-center space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Como foi sua experiência com {restaurant?.name}?
+                      </p>
+                      
+                      <div className="flex justify-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={32}
+                            className={`cursor-pointer transition-colors ${
+                              (hoverRating || rating) >= star
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                            onClick={() => setRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                          />
+                        ))}
+                      </div>
+                      
+                      <Button
+                        onClick={() => handleRating(rating)}
+                        disabled={rating === 0}
+                        className="w-full"
+                      >
+                        Enviar Avaliação
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {hasRated && (
+                  <Card>
+                    <CardContent className="text-center py-4">
+                      <div className="flex justify-center space-x-1 mb-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={20}
+                            className={
+                              rating >= star
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300'
+                            }
+                          />
+                        ))}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Obrigado pela sua avaliação!
+                      </p>
+                    </CardContent>
                   </CardContent>
                 </Card>
               </div>

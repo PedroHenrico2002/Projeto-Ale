@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,6 +41,7 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
   });
   const [savedCards, setSavedCards] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [saveCard, setSaveCard] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -78,6 +80,34 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
           expiryDate: card.expiry_date
         });
       }
+    }
+  };
+
+  const saveCardToDatabase = async (cardData: any, saveCard: boolean = false) => {
+    if (!user || !saveCard) return;
+
+    try {
+      // Mask card number for storage (only last 4 digits visible)
+      const maskedNumber = `****-****-****-${cardData.number.slice(-4)}`;
+      
+      const { error } = await supabase
+        .from('payment_methods')
+        .insert({
+          user_id: user.id,
+          type: paymentMethod,
+          card_number: maskedNumber,
+          card_name: cardData.name,
+          expiry_date: cardData.expiryDate,
+          is_default: savedCards.length === 0 // First card becomes default
+        });
+
+      if (error) throw error;
+      
+      toast.success('Cartão salvo com sucesso!');
+      fetchSavedCards(); // Refresh the list
+    } catch (error) {
+      console.error('Erro ao salvar cartão:', error);
+      toast.error('Erro ao salvar cartão');
     }
   };
 
@@ -203,6 +233,28 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
                   </div>
                 </div>
               </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="saveCard"
+                  checked={saveCard}
+                  onCheckedChange={(checked) => setSaveCard(!!checked)}
+                />
+                <Label htmlFor="saveCard" className="text-sm">
+                  Salvar este cartão para próximas compras
+                </Label>
+              </div>
+              
+              {cardData.number && cardData.name && cardData.expiryDate && cardData.cvv && (
+                <Button
+                  onClick={() => saveCardToDatabase(cardData, saveCard)}
+                  variant="outline"
+                  className="w-full"
+                  disabled={!saveCard}
+                >
+                  Salvar Cartão
+                </Button>
+              )}
             </div>
           </TabsContent>
 

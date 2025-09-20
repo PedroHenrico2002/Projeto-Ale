@@ -143,10 +143,9 @@ const Checkout: React.FC = () => {
       clearCart();
       
       toast.success('Pedido realizado com sucesso!');
-      navigate('/order-complete', { 
+      navigate('/order-tracking', { 
         state: { 
-          orderId: order.id, 
-          orderData: orderData 
+          orderId: order.id
         } 
       });
     } catch (error) {
