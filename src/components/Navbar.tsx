@@ -11,29 +11,39 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, User, ChevronDown, ShoppingBag, Settings } from 'lucide-react';
 import { AddressDialog } from './AddressDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { addressService } from '@/services/supabaseService';
 
 export const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
-  // Estados locais para gerenciar informações do usuário e endereço
-  const [address, setAddress] = useState('Rua Augusta, 1500');
+  const [address, setAddress] = useState('Selecione um endereço');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const navigate = useNavigate();
   
-  /**
-   * Effect para carregar endereço padrão quando o componente é montado
-   */
   useEffect(() => {
-    // Carrega o endereço padrão salvo (se existir)
-    const storedAddresses = localStorage.getItem('savedAddresses');
-    if (storedAddresses) {
-      const addresses = JSON.parse(storedAddresses);
-      const defaultAddress = addresses.find((addr: any) => addr.isDefault);
+    loadDefaultAddress();
+  }, [user]);
+
+  const loadDefaultAddress = async () => {
+    if (!user) {
+      setAddress('Selecione um endereço');
+      return;
+    }
+
+    try {
+      const addresses = await addressService.getByUserId(user.id);
+      const defaultAddress = addresses.find(addr => addr.is_default);
+      
       if (defaultAddress) {
         const formattedAddress = `${defaultAddress.street}, ${defaultAddress.number}`;
         setAddress(formattedAddress);
+      } else if (addresses.length > 0) {
+        const formattedAddress = `${addresses[0].street}, ${addresses[0].number}`;
+        setAddress(formattedAddress);
       }
+    } catch (error) {
+      console.error('Erro ao carregar endereço:', error);
     }
-  }, []);
+  };
 
   /**
    * Função para realizar o logout do usuário
@@ -44,26 +54,8 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
   
-  /**
-   * Função para atualizar o endereço de entrega selecionado
-   * @param newAddress - Novo endereço selecionado pelo usuário
-   */
-  const handleAddressChange = (newAddress: string) => {
-    // Atualiza o endereço exibido na barra de navegação (apenas rua e número)
-    setAddress(newAddress.split(' - ')[0]);
-    
-    // Atualiza o endereço nos detalhes do pedido (se estiver na página de detalhes)
-    const orderDetails = sessionStorage.getItem('orderDetails');
-    if (orderDetails) {
-      const parsedOrder = JSON.parse(orderDetails);
-      parsedOrder.address = newAddress;
-      sessionStorage.setItem('orderDetails', JSON.stringify(parsedOrder));
-      
-      // Atualiza a página se estiver na tela de detalhes do pedido
-      if (window.location.pathname.includes('order-details')) {
-        window.location.reload();
-      }
-    }
+  const handleAddressChange = () => {
+    loadDefaultAddress();
   };
   
   return (

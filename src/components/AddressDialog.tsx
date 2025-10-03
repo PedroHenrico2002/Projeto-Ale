@@ -7,22 +7,28 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { addressService } from '@/services/supabaseService';
+import { useAuth } from '@/hooks/useAuth';
 
-interface Address {
+type Address = {
   id: string;
+  user_id: string;
   street: string;
   number: string;
   complement?: string;
   neighborhood: string;
   city: string;
   state: string;
-  isDefault: boolean;
-}
+  zip_code: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
 
 interface AddressDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddressChange: (address: string) => void;
+  onAddressChange: () => void;
 }
 
 export const AddressDialog: React.FC<AddressDialogProps> = ({
@@ -30,6 +36,7 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
   onOpenChange,
   onAddressChange
 }) => {
+  const { user } = useAuth();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showForm, setShowForm] = useState(false);
   
@@ -40,109 +47,108 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
       complement: '',
       neighborhood: '',
       city: 'São Paulo',
-      state: 'SP'
+      state: 'SP',
+      zip_code: ''
     }
   });
 
   useEffect(() => {
-    // Get saved addresses from localStorage
-    const storedAddresses = localStorage.getItem('savedAddresses');
-    if (storedAddresses) {
-      setAddresses(JSON.parse(storedAddresses));
-    } else {
-      // Initialize with default address if none exists
-      const defaultAddress = {
-        id: '1',
-        street: 'Rua Augusta',
-        number: '1500',
-        neighborhood: 'Consolação',
-        city: 'São Paulo',
-        state: 'SP',
-        isDefault: true
-      };
-      setAddresses([defaultAddress]);
-      localStorage.setItem('savedAddresses', JSON.stringify([defaultAddress]));
+    if (open && user) {
+      loadAddresses();
     }
-  }, []);
+  }, [open, user]);
 
-  const onSubmit = (data: any) => {
-    const newAddress: Address = {
-      id: Date.now().toString(),
-      street: data.street,
-      number: data.number,
-      complement: data.complement,
-      neighborhood: data.neighborhood,
-      city: data.city,
-      state: data.state,
-      isDefault: true
-    };
-    
-    // Set all other addresses as non-default
-    const updatedAddresses = addresses.map(addr => ({
-      ...addr,
-      isDefault: false
-    }));
-    
-    // Add new address and set as default
-    const newAddresses = [...updatedAddresses, newAddress];
-    setAddresses(newAddresses);
-    
-    // Save to localStorage
-    localStorage.setItem('savedAddresses', JSON.stringify(newAddresses));
-    
-    // Update address in parent component
-    const formattedAddress = `${newAddress.street}, ${newAddress.number} - ${newAddress.neighborhood}, ${newAddress.city}`;
-    onAddressChange(formattedAddress);
-    
-    // Reset form and close form view
-    form.reset();
-    setShowForm(false);
-    toast.success('Endereço salvo com sucesso!');
+  const loadAddresses = async () => {
+    if (!user) return;
+
+    try {
+      const data = await addressService.getByUserId(user.id);
+      setAddresses(data);
+    } catch (error) {
+      console.error('Erro ao carregar endereços:', error);
+      toast.error('Erro ao carregar endereços');
+    }
   };
 
-  const handleSetDefault = (id: string) => {
-    const updatedAddresses = addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    }));
-    
-    setAddresses(updatedAddresses);
-    localStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses));
-    
-    const defaultAddress = updatedAddresses.find(addr => addr.isDefault);
-    if (defaultAddress) {
-      const formattedAddress = `${defaultAddress.street}, ${defaultAddress.number} - ${defaultAddress.neighborhood}, ${defaultAddress.city}`;
-      onAddressChange(formattedAddress);
+  const onSubmit = async (data: any) => {
+    if (!user) {
+      toast.error('Você precisa estar logado para adicionar endereços');
+      return;
+    }
+
+    try {
+      // Set all other addresses as non-default
+      const updates = addresses.map(addr => 
+        addressService.update(addr.id, { is_default: false })
+      );
+      await Promise.all(updates);
+
+      // Create new address as default
+      await addressService.create({
+        user_id: user.id,
+        street: data.street,
+        number: data.number,
+        complement: data.complement || undefined,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zip_code,
+        is_default: true
+      });
+
+      toast.success('Endereço salvo com sucesso!');
+      form.reset();
+      setShowForm(false);
+      await loadAddresses();
+      onAddressChange();
+    } catch (error) {
+      console.error('Erro ao salvar endereço:', error);
+      toast.error('Erro ao salvar endereço');
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    try {
+      const updates = addresses.map(addr => 
+        addressService.update(addr.id, { is_default: addr.id === id })
+      );
+      await Promise.all(updates);
+      
       toast.success('Endereço padrão atualizado!');
+      await loadAddresses();
+      onAddressChange();
+    } catch (error) {
+      console.error('Erro ao definir endereço padrão:', error);
+      toast.error('Erro ao definir endereço padrão');
     }
   };
 
-  const handleDeleteAddress = (id: string) => {
-    // Check if it's the last address
+  const handleDeleteAddress = async (id: string) => {
     if (addresses.length <= 1) {
       toast.error('Não é possível excluir o único endereço existente');
       return;
     }
 
-    // Check if trying to delete the default address
-    const isDefault = addresses.find(addr => addr.id === id)?.isDefault;
-    
-    // Remove the address
-    const updatedAddresses = addresses.filter(addr => addr.id !== id);
-    
-    // If the deleted address was default, set a new default
-    if (isDefault) {
-      updatedAddresses[0].isDefault = true;
+    try {
+      const isDefault = addresses.find(addr => addr.id === id)?.is_default;
       
-      // Update address in parent component
-      const defaultAddress = updatedAddresses[0];
-      const formattedAddress = `${defaultAddress.street}, ${defaultAddress.number} - ${defaultAddress.neighborhood}, ${defaultAddress.city}`;
-      onAddressChange(formattedAddress);
+      await addressService.remove(id);
+      
+      // If the deleted address was default, set a new default
+      if (isDefault && addresses.length > 1) {
+        const newDefaultId = addresses.find(addr => addr.id !== id)?.id;
+        if (newDefaultId) {
+          await addressService.update(newDefaultId, { is_default: true });
+        }
+      }
+
+      toast.success('Endereço excluído com sucesso!');
+      await loadAddresses();
+      onAddressChange();
+    } catch (error) {
+      console.error('Erro ao excluir endereço:', error);
+      toast.error('Erro ao excluir endereço');
     }
-    
-    setAddresses(updatedAddresses);
-    localStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses));
-    toast.success('Endereço excluído com sucesso!');
   };
 
   return (
@@ -161,7 +167,7 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
               {addresses.map((address) => (
                 <div 
                   key={address.id} 
-                  className={`p-3 border rounded-md flex items-start justify-between ${address.isDefault ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                  className={`p-3 border rounded-md flex items-start justify-between ${address.is_default ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                 >
                   <div className="flex items-start space-x-2">
                     <MapPin className="text-red-500 mt-0.5" size={18} />
@@ -173,7 +179,10 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
                       <p className="text-xs text-gray-500">
                         {address.neighborhood}, {address.city} - {address.state}
                       </p>
-                      {address.isDefault && (
+                      <p className="text-xs text-gray-500">
+                        CEP: {address.zip_code}
+                      </p>
+                      {address.is_default && (
                         <span className="text-xs text-red-600 flex items-center mt-1">
                           <Check size={12} className="mr-1" />
                           Endereço principal
@@ -183,7 +192,7 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
                   </div>
                   
                   <div className="flex items-center">
-                    {!address.isDefault && (
+                    {!address.is_default && (
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -305,6 +314,20 @@ export const AddressDialog: React.FC<AddressDialogProps> = ({
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="zip_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input placeholder="00000-000" {...field} required />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <div className="flex justify-end space-x-2 pt-2">
                 <Button 
