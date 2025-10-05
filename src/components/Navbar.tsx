@@ -62,39 +62,12 @@ export const Navbar: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Seção de localização/endereço */}
-          <div className="flex items-center text-sm">
-            <MapPin size={18} className="text-red-500 mr-1" />
-            <button 
-              className="text-gray-800 hover:text-red-600 transition-colors flex items-center"
-              onClick={() => setShowAddressDialog(true)}
-            >
-              <span>{address}</span>
-              <ChevronDown size={16} className="ml-1 text-red-500" />
-            </button>
-            
-            {/* Diálogo para seleção de endereço */}
-            <AddressDialog 
-              open={showAddressDialog} 
-              onOpenChange={setShowAddressDialog}
-              onAddressChange={handleAddressChange}
-            />
-          </div>
+          <div></div>
           
-          {/* Logo e links principais */}
-          <div className="flex items-center space-x-4">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <h1 className="text-xl font-bold text-red-600">Be Legendary</h1>
-            </Link>
-            
-            <Link to="/orders" className="text-sm text-gray-700 hover:text-red-600 flex items-center">
-              <ShoppingBag size={16} className="mr-1" />
-              Pedidos
-            </Link>
-            
-            <Link to="/admin" className="text-sm text-gray-700 hover:text-red-600 flex items-center">
-              <Settings size={16} className="mr-1" />
-              Admin
             </Link>
           </div>
           
