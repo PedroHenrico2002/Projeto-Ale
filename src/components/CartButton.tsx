@@ -5,11 +5,11 @@ import { useCart } from '@/contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 
 export const CartButton: React.FC = () => {
-  const { getTotalItems } = useCart();
+  const { getTotalItems, isLoading } = useCart();
   const navigate = useNavigate();
   const totalItems = getTotalItems();
 
-  if (totalItems === 0) return null;
+  if (isLoading || totalItems === 0) return null;
 
   return (
     <Button
