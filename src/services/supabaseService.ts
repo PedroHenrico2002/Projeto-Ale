@@ -88,7 +88,7 @@ export const restaurantService = {
       .select(`
         *,
         categories(name, icon),
-        addresses(*)
+        addresses!restaurants_address_id_fkey(*)
       `)
       .order('name');
     
@@ -102,7 +102,7 @@ export const restaurantService = {
       .select(`
         *,
         categories(name, icon),
-        addresses(*)
+        addresses!restaurants_address_id_fkey(*)
       `)
       .eq('id', id)
       .single();
