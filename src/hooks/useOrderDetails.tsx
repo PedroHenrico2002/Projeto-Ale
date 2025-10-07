@@ -38,9 +38,9 @@ export const useOrderDetails = () => {
       setOrder(parsedOrder);
       
       const stateProgression = [
-        { status: 'preparing' as const, delay: 10000, estimatedDelivery: '15-20 min' },
-        { status: 'ready' as const, delay: 15000, estimatedDelivery: '10-15 min' },
-        { status: 'delivering' as const, delay: 20000, estimatedDelivery: '5-10 min' },
+        { status: 'preparing' as const, delay: 3000, estimatedDelivery: '15-20 min' },
+        { status: 'ready' as const, delay: 5000, estimatedDelivery: '10-15 min' },
+        { status: 'delivering' as const, delay: 7000, estimatedDelivery: '5-10 min' },
         { status: 'delivered' as const, delay: 0, estimatedDelivery: 'Entregue' }
       ];
       
