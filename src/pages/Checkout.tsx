@@ -25,7 +25,8 @@ const Checkout: React.FC = () => {
   const { items, isLoading: cartLoading, getTotalPrice, clearCart, getRestaurantId } = useCart();
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
-  const [userAddress, setUserAddress] = useState<any>(null);
+  const [userAddresses, setUserAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
 
   useEffect(() => {
@@ -56,14 +57,16 @@ const Checkout: React.FC = () => {
         .from('addresses')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_default', true)
-        .limit(1);
+        .order('is_default', { ascending: false });
 
       if (addresses && addresses.length > 0) {
-        setUserAddress(addresses[0]);
+        setUserAddresses(addresses);
+        // Seleciona o endereço padrão ou o primeiro
+        const defaultAddress = addresses.find(addr => addr.is_default) || addresses[0];
+        setSelectedAddressId(defaultAddress.id);
       }
     } catch (error) {
-      console.error('Erro ao buscar endereço:', error);
+      console.error('Erro ao buscar endereços:', error);
     }
   };
 
@@ -96,8 +99,8 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    if (!userAddress) {
-      toast.error('Endereço de entrega não encontrado');
+    if (!selectedAddressId) {
+      toast.error('Selecione um endereço de entrega');
       return;
     }
 
@@ -125,7 +128,7 @@ const Checkout: React.FC = () => {
 
       const orderData = {
         restaurant_id: restaurantId,
-        delivery_address_id: userAddress.id,
+        delivery_address_id: selectedAddressId,
         items: items.map(item => ({
           id: item.id,
           name: item.name,
@@ -212,18 +215,50 @@ const Checkout: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {userAddress ? (
-                    <div>
-                      <p className="font-medium">
-                        {userAddress.street}, {userAddress.number}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {userAddress.neighborhood} - {userAddress.city}, {userAddress.state}
-                      </p>
-                      <p className="text-muted-foreground">CEP: {userAddress.zip_code}</p>
+                  {userAddresses.length > 0 ? (
+                    <div className="space-y-3">
+                      {userAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedAddressId === address.id
+                              ? 'border-accent bg-accent/10'
+                              : 'border-border hover:border-accent/50'
+                          }`}
+                          onClick={() => setSelectedAddressId(address.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {address.street}, {address.number}
+                              </p>
+                              {address.complement && (
+                                <p className="text-sm text-muted-foreground">{address.complement}</p>
+                              )}
+                              <p className="text-sm text-muted-foreground">
+                                {address.neighborhood} - {address.city}, {address.state}
+                              </p>
+                              <p className="text-sm text-muted-foreground">CEP: {address.zip_code}</p>
+                            </div>
+                            {selectedAddressId === address.id && (
+                              <Check size={20} className="text-accent flex-shrink-0 ml-2" />
+                            )}
+                          </div>
+                          {address.is_default && (
+                            <span className="inline-block mt-2 text-xs bg-accent/20 text-accent px-2 py-1 rounded">
+                              Endereço Padrão
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">Nenhum endereço configurado</p>
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground mb-3">Nenhum endereço cadastrado</p>
+                      <Button variant="outline" onClick={() => navigate('/profile')}>
+                        Adicionar Endereço
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -272,7 +307,7 @@ const Checkout: React.FC = () => {
                   <Button 
                     className="w-full h-12 mt-6"
                     onClick={handlePlaceOrder}
-                    disabled={loading || !paymentData || !userAddress}
+                    disabled={loading || !paymentData || !selectedAddressId}
                   >
                     <Check size={16} className="mr-2" />
                     {loading ? 'Processando...' : `Finalizar Pedido - R$ ${total.toFixed(2)}`}

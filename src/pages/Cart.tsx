@@ -10,6 +10,8 @@ import { useCart } from '@/contexts/CartContext';
 const Cart: React.FC = () => {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCart();
+  const [promoCode, setPromoCode] = React.useState('');
+  const [discount, setDiscount] = React.useState(0);
   
   const handleLocationSelect = (selectedAddress: string) => {
     toast.success('Localização de entrega atualizada!');
@@ -18,12 +20,24 @@ const Cart: React.FC = () => {
   const handleCheckout = () => {
     navigate('/checkout');
   };
+
+  const handleApplyPromo = () => {
+    if (promoCode.toLowerCase() === 'primeiracompra') {
+      setDiscount(0.1); // 10% de desconto
+      toast.success('Código promocional aplicado! 10% de desconto no total.');
+    } else {
+      toast.error('Código promocional inválido');
+      setDiscount(0);
+    }
+  };
   
   // Calculate totals
   const subtotal = getTotalPrice();
   const deliveryFee = 5.99;
   const tax = subtotal * 0.1;
-  const total = subtotal + deliveryFee + tax;
+  const totalBeforeDiscount = subtotal + deliveryFee + tax;
+  const discountAmount = totalBeforeDiscount * discount;
+  const total = totalBeforeDiscount - discountAmount;
   
   // Check if cart is empty
   const isCartEmpty = items.length === 0;
@@ -172,6 +186,12 @@ const Cart: React.FC = () => {
                       <span>Impostos</span>
                       <span>R${tax.toFixed(2)}</span>
                     </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Desconto (10%)</span>
+                        <span>-R${discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="border-t border-border pt-3">
                       <div className="flex justify-between font-medium">
                         <span>Total</span>
@@ -195,11 +215,19 @@ const Cart: React.FC = () => {
                       type="text"
                       placeholder="Digite o código promocional"
                       className="flex-1 rounded-l-md border border-r-0 border-input focus:border-accent focus:ring-1 focus:ring-accent px-3 py-2"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
                     />
-                    <Button className="rounded-l-none bg-accent hover:bg-accent/90 text-accent-foreground">
+                    <Button 
+                      className="rounded-l-none bg-accent hover:bg-accent/90 text-accent-foreground"
+                      onClick={handleApplyPromo}
+                    >
                       Aplicar
                     </Button>
                   </div>
+                  {discount > 0 && (
+                    <p className="text-sm text-green-600 mt-2">✓ Código aplicado com sucesso!</p>
+                  )}
                 </div>
                 
                 <Link to="/restaurants" className="mt-6 block">
