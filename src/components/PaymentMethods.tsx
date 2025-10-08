@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CreditCard, Banknote, Smartphone } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, Copy, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
+import QRCode from 'qrcode';
 
 export type PaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';
 
@@ -42,6 +43,10 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
   const [savedCards, setSavedCards] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [saveCard, setSaveCard] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [pixCode, setPixCode] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -65,10 +70,48 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
     }
   };
 
+  const generatePixQRCode = async () => {
+    // Gerar código PIX (simulado - em produção seria um payload PIX válido)
+    const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${crypto.randomUUID()}520400005303986540510.005802BR5925Restaurante Delivery6009SAO PAULO62070503***6304`;
+    
+    setPixCode(pixPayload);
+    
+    try {
+      if (canvasRef.current) {
+        await QRCode.toCanvas(canvasRef.current, pixPayload, {
+          width: 250,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+      }
+      
+      const qrUrl = await QRCode.toDataURL(pixPayload, {
+        width: 250,
+        margin: 2
+      });
+      setQrCodeUrl(qrUrl);
+    } catch (error) {
+      console.error('Erro ao gerar QR Code:', error);
+      toast.error('Erro ao gerar QR Code PIX');
+    }
+  };
+
+  useEffect(() => {
+    if (paymentMethod === 'pix' && !qrCodeUrl) {
+      generatePixQRCode();
+    }
+  }, [paymentMethod]);
+
   const handlePaymentMethodChange = (method: PaymentMethod) => {
     setPaymentMethod(method);
     
-    if (method === 'cash' || method === 'pix') {
+    if (method === 'cash') {
+      onPaymentSelect({ method });
+    } else if (method === 'pix') {
+      generatePixQRCode();
       onPaymentSelect({ method });
     } else if (selectedCard) {
       const card = savedCards.find(c => c.id === selectedCard);
@@ -136,6 +179,13 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
       });
       setPaymentMethod(card.type as PaymentMethod);
     }
+  };
+
+  const handleCopyPixCode = () => {
+    navigator.clipboard.writeText(pixCode);
+    setCopied(true);
+    toast.success('Código PIX copiado!');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -272,6 +322,38 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
                   <div className="text-sm text-muted-foreground">Pagamento instantâneo</div>
                 </div>
               </div>
+              
+              {paymentMethod === 'pix' && qrCodeUrl && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex justify-center bg-white p-4 rounded-lg">
+                    <canvas ref={canvasRef} />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Código PIX Copia e Cola</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={pixCode}
+                        readOnly
+                        className="text-xs font-mono"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCopyPixCode}
+                        className="flex-shrink-0"
+                      >
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center text-sm text-muted-foreground">
+                    <p>Escaneie o QR Code ou copie o código acima</p>
+                    <p className="font-medium mt-1">Aguardando pagamento...</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div 
