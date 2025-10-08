@@ -46,7 +46,44 @@ const OrderTracking: React.FC = () => {
       return;
     }
 
-    fetchOrderData();
+    let interval: NodeJS.Timeout | undefined;
+
+    const initializeOrderTracking = async () => {
+      const initialOrder = await fetchOrderData();
+      
+      // Only simulate progression if order is not delivered yet
+      if (initialOrder && initialOrder.status !== 'delivered') {
+        const progressSteps = ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'];
+        let currentStep = progressSteps.indexOf(initialOrder.status);
+        if (currentStep === -1) currentStep = 0;
+
+        const updateStatus = async () => {
+          if (currentStep < progressSteps.length - 1) {
+            currentStep++;
+            try {
+              await supabase
+                .from('orders')
+                .update({ status: progressSteps[currentStep] })
+                .eq('id', orderId);
+                
+              // Stop when delivered
+              if (progressSteps[currentStep] === 'delivered' && interval) {
+                clearInterval(interval);
+              }
+            } catch (error) {
+              console.error('Erro ao atualizar status:', error);
+            }
+          } else if (interval) {
+            clearInterval(interval);
+          }
+        };
+
+        // Update status every 5 seconds for demo purposes
+        interval = setInterval(updateStatus, 5000);
+      }
+    };
+
+    initializeOrderTracking();
     
     // Set up real-time updates
     const subscription = supabase
@@ -66,46 +103,20 @@ const OrderTracking: React.FC = () => {
           // Show rating when order is delivered
           if (newOrder.status === 'delivered' && !hasRated) {
             setShowRating(true);
+            if (interval) clearInterval(interval);
           }
         }
       )
       .subscribe();
 
-    // Simulate order status progression
-    const simulateOrderProgress = () => {
-      const progressSteps = ['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'];
-      let currentStep = 0;
-
-      const updateStatus = async () => {
-        if (currentStep < progressSteps.length - 1) {
-          currentStep++;
-          try {
-            await supabase
-              .from('orders')
-              .update({ status: progressSteps[currentStep] })
-              .eq('id', orderId);
-          } catch (error) {
-            console.error('Erro ao atualizar status:', error);
-          }
-        }
-      };
-
-      // Update status every 5 seconds for demo purposes
-      const interval = setInterval(updateStatus, 5000);
-      
-      return () => clearInterval(interval);
-    };
-
-    const cleanup = simulateOrderProgress();
-
     return () => {
       subscription.unsubscribe();
-      cleanup();
+      if (interval) clearInterval(interval);
     };
-  }, [orderId, navigate]);
+  }, [orderId, navigate, hasRated]);
 
   const fetchOrderData = async () => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
       const { data: orderData, error } = await supabase
@@ -123,6 +134,11 @@ const OrderTracking: React.FC = () => {
       if (orderData.rating) {
         setHasRated(true);
         setRating(orderData.rating);
+      }
+
+      // Show rating if already delivered
+      if (orderData.status === 'delivered' && !orderData.rating) {
+        setShowRating(true);
       }
 
       // Fetch restaurant data
@@ -150,10 +166,13 @@ const OrderTracking: React.FC = () => {
           setAddress(addressData);
         }
       }
+
+      return orderData as OrderData;
     } catch (error) {
       console.error('Erro ao buscar dados do pedido:', error);
       toast.error('Erro ao carregar dados do pedido');
       navigate('/orders');
+      return null;
     } finally {
       setLoading(false);
     }
