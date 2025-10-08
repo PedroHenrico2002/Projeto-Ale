@@ -15,16 +15,18 @@ import { UserPaymentMethods } from '@/components/profile/UserPaymentMethods';
 import { Navigate } from 'react-router-dom';
 import { ShoppingBag, Heart } from 'lucide-react';
 import { favoritesService } from '@/services/favoritesService';
-
 export const Profile: React.FC = () => {
-  const { user, loading, signOut } = useAuth();
+  const {
+    user,
+    loading,
+    signOut
+  } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [updating, setUpdating] = useState(false);
   const [orders, setOrders] = useState([]);
   const [favorites, setFavorites] = useState([]);
-
   useEffect(() => {
     if (user) {
       fetchProfile();
@@ -32,7 +34,6 @@ export const Profile: React.FC = () => {
       fetchFavorites();
     }
   }, [user]);
-
   const fetchProfile = async () => {
     if (!user) return;
     try {
@@ -44,7 +45,6 @@ export const Profile: React.FC = () => {
       console.error('Erro ao buscar perfil:', error);
     }
   };
-
   const fetchOrders = async () => {
     if (!user) return;
     try {
@@ -54,7 +54,6 @@ export const Profile: React.FC = () => {
       console.error('Erro ao buscar pedidos:', error);
     }
   };
-
   const fetchFavorites = async () => {
     if (!user) return;
     try {
@@ -64,48 +63,39 @@ export const Profile: React.FC = () => {
       console.error('Erro ao buscar favoritos:', error);
     }
   };
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     setUpdating(true);
     try {
       await profileService.updateProfile(user.id, {
         display_name: displayName,
         phone: phone
       });
-      
       toast({
         title: "Perfil atualizado!",
-        description: "Suas informações foram salvas com sucesso.",
+        description: "Suas informações foram salvas com sucesso."
       });
     } catch (error) {
       toast({
         title: "Erro ao atualizar",
         description: "Não foi possível salvar as alterações.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
     setUpdating(false);
   };
-
   if (loading) {
-    return (
-      <Layout>
+    return <Layout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
-      </Layout>
-    );
+      </Layout>;
   }
-
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         <div className="page-container pt-20 pb-16">
           <div className="max-w-4xl mx-auto">
@@ -130,35 +120,17 @@ export const Profile: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={user.email || ''}
-                        disabled
-                        className="bg-muted"
-                      />
+                      <Input id="email" type="email" value={user.email || ''} disabled className="bg-muted" />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="displayName">Nome de exibição</Label>
-                      <Input
-                        id="displayName"
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="Como você gostaria de ser chamado?"
-                      />
+                      <Input id="displayName" type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Como você gostaria de ser chamado?" />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="(11) 99999-9999"
-                      />
+                      <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
                     </div>
                   </div>
 
@@ -186,7 +158,7 @@ export const Profile: React.FC = () => {
             <Tabs defaultValue="orders" className="space-y-6">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="orders">Pedidos</TabsTrigger>
-                <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+                
                 <TabsTrigger value="addresses">Endereços</TabsTrigger>
                 <TabsTrigger value="payments">Pagamentos</TabsTrigger>
               </TabsList>
@@ -203,10 +175,8 @@ export const Profile: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {orders.length > 0 ? (
-                      <div className="space-y-4">
-                        {orders.slice(0, 3).map((order: any) => (
-                          <div key={order.id} className="border rounded-lg p-4">
+                    {orders.length > 0 ? <div className="space-y-4">
+                        {orders.slice(0, 3).map((order: any) => <div key={order.id} className="border rounded-lg p-4">
                             <div className="flex justify-between items-start">
                               <div>
                                 <p className="font-medium">Pedido #{order.id.substring(0, 8)}</p>
@@ -222,15 +192,11 @@ export const Profile: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
+                          </div>)}
+                      </div> : <div className="text-center py-8 text-muted-foreground">
                         <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>Nenhum pedido encontrado</p>
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -247,25 +213,19 @@ export const Profile: React.FC = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {favorites.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {favorites.map((favorite: any) => (
-                          <div key={favorite.id} className="border rounded-lg p-4">
+                    {favorites.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {favorites.map((favorite: any) => <div key={favorite.id} className="border rounded-lg p-4">
                             <h4 className="font-medium">{favorite.restaurants.name}</h4>
                             <p className="text-sm text-muted-foreground">{favorite.restaurants.cuisine}</p>
                             <div className="flex items-center text-yellow-500 text-sm mt-1">
                               <span className="mr-1">★</span>
                               <span>{favorite.restaurants.rating}</span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
+                          </div>)}
+                      </div> : <div className="text-center py-8 text-muted-foreground">
                         <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>Nenhum favorito adicionado</p>
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -281,6 +241,5 @@ export const Profile: React.FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
