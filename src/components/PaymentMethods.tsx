@@ -1,3 +1,12 @@
+/**
+ * Componente de Métodos de Pagamento
+ * 
+ * Gerencia todas as formas de pagamento disponíveis no sistema:
+ * - Cartões de crédito e débito (novos e salvos)
+ * - PIX com geração de QR Code
+ * - Dinheiro (pagamento na entrega)
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,86 +21,133 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import QRCode from 'qrcode';
 
+// Tipo que define as formas de pagamento aceitas
 export type PaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';
 
+// Interface dos dados de pagamento a serem enviados ao componente pai
 interface PaymentData {
-  method: PaymentMethod;
-  cardNumber?: string;
-  cardName?: string;
-  expiryDate?: string;
-  cvv?: string;
+  method: PaymentMethod; // Método de pagamento selecionado
+  cardNumber?: string; // Número do cartão (opcional)
+  cardName?: string; // Nome impresso no cartão (opcional)
+  expiryDate?: string; // Data de validade (opcional)
+  cvv?: string; // Código de segurança (opcional)
 }
 
+// Props do componente PaymentMethods
 interface PaymentMethodsProps {
-  onPaymentSelect: (paymentData: PaymentData) => void;
-  selectedMethod?: PaymentMethod;
+  onPaymentSelect: (paymentData: PaymentData) => void; // Callback quando um método é selecionado
+  selectedMethod?: PaymentMethod; // Método pré-selecionado (opcional)
 }
 
 export const PaymentMethods: React.FC<PaymentMethodsProps> = ({ 
   onPaymentSelect, 
-  selectedMethod = 'credit' 
+  selectedMethod = 'credit' // Valor padrão: crédito
 }) => {
+  // Hook de autenticação para acessar dados do usuário logado
   const { user } = useAuth();
+  
+  // Estado para controlar qual aba está ativa (cartão ou outros métodos)
   const [activeTab, setActiveTab] = useState('card');
+  
+  // Estado do método de pagamento atual
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(selectedMethod);
+  
+  // Estado dos dados do novo cartão sendo digitado
   const [cardData, setCardData] = useState({
-    number: '',
-    name: '',
-    expiryDate: '',
-    cvv: ''
+    number: '', // Número do cartão
+    name: '', // Nome no cartão
+    expiryDate: '', // Validade (MM/AA)
+    cvv: '' // Código de segurança
   });
+  
+  // Lista de cartões salvos do usuário
   const [savedCards, setSavedCards] = useState<any[]>([]);
+  
+  // ID do cartão salvo selecionado
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  
+  // Indica se o usuário quer salvar o cartão atual
   const [saveCard, setSaveCard] = useState(false);
+  
+  // URL da imagem do QR Code PIX gerado
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  
+  // Código PIX copia e cola (payload)
   const [pixCode, setPixCode] = useState<string>('');
+  
+  // Indica se o código PIX foi copiado
   const [copied, setCopied] = useState(false);
+  
+  // Referência ao elemento canvas para renderizar o QR Code
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  /**
+   * Efeito: Busca cartões salvos quando o usuário estiver logado
+   * Executa sempre que o objeto 'user' mudar
+   */
   useEffect(() => {
     if (user) {
       fetchSavedCards();
     }
   }, [user]);
 
+  /**
+   * Busca todos os cartões salvos do usuário no banco de dados
+   */
   const fetchSavedCards = async () => {
+    // Se não houver usuário logado, não faz nada
     if (!user) return;
     
     try {
+      // Consulta a tabela payment_methods filtrando pelo ID do usuário
       const { data, error } = await supabase
         .from('payment_methods')
         .select('*')
         .eq('user_id', user.id);
 
+      // Se houver erro na consulta, lança exceção
       if (error) throw error;
+      
+      // Atualiza o estado com os cartões encontrados (ou array vazio)
       setSavedCards(data || []);
     } catch (error) {
       console.error('Erro ao buscar cartões:', error);
     }
   };
 
+  /**
+   * Gera o QR Code PIX e o código copia e cola
+   * NOTA: Em produção, este payload deve vir de um backend que gere
+   * um código PIX válido com os dados reais da transação
+   */
   const generatePixQRCode = async () => {
-    // Gerar código PIX (simulado - em produção seria um payload PIX válido)
+    // Gera um payload PIX simulado (em produção seria um código real)
+    // O UUID garante que cada código seja único
     const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${crypto.randomUUID()}520400005303986540510.005802BR5925Restaurante Delivery6009SAO PAULO62070503***6304`;
     
+    // Salva o código PIX no estado
     setPixCode(pixPayload);
     
     try {
+      // Se o elemento canvas existir, renderiza o QR Code nele
       if (canvasRef.current) {
         await QRCode.toCanvas(canvasRef.current, pixPayload, {
-          width: 250,
-          margin: 2,
+          width: 250, // Largura do QR Code em pixels
+          margin: 2, // Margem ao redor do código
           color: {
-            dark: '#000000',
-            light: '#FFFFFF'
+            dark: '#000000', // Cor dos quadrados escuros
+            light: '#FFFFFF' // Cor do fundo
           }
         });
       }
       
+      // Gera também uma URL de imagem do QR Code (para exibição alternativa)
       const qrUrl = await QRCode.toDataURL(pixPayload, {
         width: 250,
         margin: 2
       });
+      
+      // Salva a URL da imagem no estado
       setQrCodeUrl(qrUrl);
     } catch (error) {
       console.error('Erro ao gerar QR Code:', error);
@@ -99,21 +155,35 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
     }
   };
 
+  /**
+   * Efeito: Gera o QR Code automaticamente quando PIX for selecionado
+   * e ainda não houver QR Code gerado
+   */
   useEffect(() => {
     if (paymentMethod === 'pix' && !qrCodeUrl) {
       generatePixQRCode();
     }
   }, [paymentMethod]);
 
+  /**
+   * Manipula a mudança do método de pagamento
+   * @param method - Novo método de pagamento selecionado
+   */
   const handlePaymentMethodChange = (method: PaymentMethod) => {
+    // Atualiza o estado do método de pagamento
     setPaymentMethod(method);
     
+    // Se for dinheiro, apenas notifica o componente pai
     if (method === 'cash') {
       onPaymentSelect({ method });
-    } else if (method === 'pix') {
+    } 
+    // Se for PIX, gera o QR Code e notifica
+    else if (method === 'pix') {
       generatePixQRCode();
       onPaymentSelect({ method });
-    } else if (selectedCard) {
+    } 
+    // Se for cartão e houver um cartão salvo selecionado, usa seus dados
+    else if (selectedCard) {
       const card = savedCards.find(c => c.id === selectedCard);
       if (card) {
         onPaymentSelect({
@@ -126,39 +196,60 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
     }
   };
 
+  /**
+   * Salva um novo cartão no banco de dados
+   * @param cardData - Dados do cartão a ser salvo
+   * @param saveCard - Flag indicando se deve salvar (proteção extra)
+   */
   const saveCardToDatabase = async (cardData: any, saveCard: boolean = false) => {
+    // Se não houver usuário logado ou flag saveCard for false, não faz nada
     if (!user || !saveCard) return;
 
     try {
-      // Mask card number for storage (only last 4 digits visible)
+      // Mascara o número do cartão para segurança (mostra apenas os 4 últimos dígitos)
+      // Exemplo: 1234567890123456 vira ****-****-****-3456
       const maskedNumber = `****-****-****-${cardData.number.slice(-4)}`;
       
+      // Insere o novo cartão na tabela payment_methods
       const { error } = await supabase
         .from('payment_methods')
         .insert({
-          user_id: user.id,
-          type: paymentMethod,
-          card_number: maskedNumber,
-          card_name: cardData.name,
-          expiry_date: cardData.expiryDate,
-          is_default: savedCards.length === 0 // First card becomes default
+          user_id: user.id, // ID do usuário logado
+          type: paymentMethod, // Tipo: crédito ou débito
+          card_number: maskedNumber, // Número mascarado
+          card_name: cardData.name, // Nome no cartão
+          expiry_date: cardData.expiryDate, // Data de validade
+          is_default: savedCards.length === 0 // Se for o primeiro cartão, torna padrão
         });
 
+      // Se houver erro na inserção, lança exceção
       if (error) throw error;
       
+      // Notifica sucesso ao usuário
       toast.success('Cartão salvo com sucesso!');
-      fetchSavedCards(); // Refresh the list
+      
+      // Recarrega a lista de cartões salvos
+      fetchSavedCards();
     } catch (error) {
       console.error('Erro ao salvar cartão:', error);
       toast.error('Erro ao salvar cartão');
     }
   };
 
+  /**
+   * Manipula mudanças nos campos do formulário de novo cartão
+   * @param field - Nome do campo que foi alterado
+   * @param value - Novo valor do campo
+   */
   const handleCardDataChange = (field: string, value: string) => {
+    // Cria um novo objeto com o campo atualizado
     const newCardData = { ...cardData, [field]: value };
+    
+    // Atualiza o estado com os novos dados
     setCardData(newCardData);
     
-    // Auto-select payment if form is valid
+    // Auto-seleção: se todos os campos obrigatórios estiverem preenchidos,
+    // automaticamente notifica o componente pai
     if (newCardData.number && newCardData.name && newCardData.expiryDate && newCardData.cvv) {
       onPaymentSelect({
         method: paymentMethod,
@@ -167,24 +258,45 @@ export const PaymentMethods: React.FC<PaymentMethodsProps> = ({
     }
   };
 
+  /**
+   * Manipula a seleção de um cartão salvo
+   * @param cardId - ID do cartão selecionado
+   */
   const handleSavedCardSelect = (cardId: string) => {
+    // Atualiza qual cartão está selecionado
     setSelectedCard(cardId);
+    
+    // Busca os dados completos do cartão na lista
     const card = savedCards.find(c => c.id === cardId);
+    
     if (card) {
+      // Notifica o componente pai com os dados do cartão selecionado
       onPaymentSelect({
         method: card.type as PaymentMethod,
         cardNumber: card.card_number,
         cardName: card.card_name,
         expiryDate: card.expiry_date
       });
+      
+      // Atualiza o método de pagamento para corresponder ao tipo do cartão
       setPaymentMethod(card.type as PaymentMethod);
     }
   };
 
+  /**
+   * Copia o código PIX para a área de transferência
+   */
   const handleCopyPixCode = () => {
+    // Usa a API do navegador para copiar o texto
     navigator.clipboard.writeText(pixCode);
+    
+    // Marca como copiado
     setCopied(true);
+    
+    // Exibe notificação de sucesso
     toast.success('Código PIX copiado!');
+    
+    // Após 2 segundos, remove a indicação visual de copiado
     setTimeout(() => setCopied(false), 2000);
   };
 
