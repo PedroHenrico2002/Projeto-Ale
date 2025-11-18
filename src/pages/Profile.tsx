@@ -14,7 +14,6 @@ import { UserAddresses } from '@/components/profile/UserAddresses';
 import { UserPaymentMethods } from '@/components/profile/UserPaymentMethods';
 import { Navigate } from 'react-router-dom';
 import { ShoppingBag, Heart } from 'lucide-react';
-import { favoritesService } from '@/services/favoritesService';
 export const Profile: React.FC = () => {
   const {
     user,
@@ -26,12 +25,10 @@ export const Profile: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [updating, setUpdating] = useState(false);
   const [orders, setOrders] = useState([]);
-  const [favorites, setFavorites] = useState([]);
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchOrders();
-      fetchFavorites();
     }
   }, [user]);
   const fetchProfile = async () => {
@@ -52,15 +49,6 @@ export const Profile: React.FC = () => {
       setOrders(userOrders);
     } catch (error) {
       console.error('Erro ao buscar pedidos:', error);
-    }
-  };
-  const fetchFavorites = async () => {
-    if (!user) return;
-    try {
-      const userFavorites = await favoritesService.getByUserId(user.id);
-      setFavorites(userFavorites);
-    } catch (error) {
-      console.error('Erro ao buscar favoritos:', error);
     }
   };
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -156,9 +144,8 @@ export const Profile: React.FC = () => {
             </Card>
 
             <Tabs defaultValue="orders" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="orders">Pedidos</TabsTrigger>
-                
                 <TabsTrigger value="addresses">Endereços</TabsTrigger>
                 <TabsTrigger value="payments">Pagamentos</TabsTrigger>
               </TabsList>
@@ -196,35 +183,6 @@ export const Profile: React.FC = () => {
                       </div> : <div className="text-center py-8 text-muted-foreground">
                         <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>Nenhum pedido encontrado</p>
-                      </div>}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="favorites">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Heart className="h-5 w-5" />
-                      Restaurantes Favoritos
-                    </CardTitle>
-                    <CardDescription>
-                      Seus restaurantes favoritos sincronizados
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {favorites.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {favorites.map((favorite: any) => <div key={favorite.id} className="border rounded-lg p-4">
-                            <h4 className="font-medium">{favorite.restaurants.name}</h4>
-                            <p className="text-sm text-muted-foreground">{favorite.restaurants.cuisine}</p>
-                            <div className="flex items-center text-yellow-500 text-sm mt-1">
-                              <span className="mr-1">★</span>
-                              <span>{favorite.restaurants.rating}</span>
-                            </div>
-                          </div>)}
-                      </div> : <div className="text-center py-8 text-muted-foreground">
-                        <Heart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Nenhum favorito adicionado</p>
                       </div>}
                   </CardContent>
                 </Card>
