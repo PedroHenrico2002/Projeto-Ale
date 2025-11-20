@@ -2,7 +2,17 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+console.log("Verificando RESEND_API_KEY:");
+console.log("- Chave presente:", !!resendApiKey);
+console.log("- Comprimento:", resendApiKey?.length);
+console.log("- Começa com 're_':", resendApiKey?.startsWith("re_"));
+
+if (!resendApiKey) {
+  throw new Error("RESEND_API_KEY não está configurada");
+}
+
+const resend = new Resend(resendApiKey);
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
