@@ -109,7 +109,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Código enviado para ${email}: ${code}`);
+    console.log(`Código ${code} enviado com sucesso para ${email}`);
 
     return new Response(
       JSON.stringify({ success: true, message: "Código enviado com sucesso" }),
