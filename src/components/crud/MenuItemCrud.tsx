@@ -6,10 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pencil, Trash2, Plus, Utensils, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, Utensils, Search, SlidersHorizontal, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from '@/integrations/supabase/client';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,8 @@ export const MenuItemCrud: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRestaurant, setFilterRestaurant] = useState<string | null>(null);
   const [sortType, setSortType] = useState<'none' | 'alphabetical' | 'rating'>('none');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,6 +88,7 @@ export const MenuItemCrud: React.FC = () => {
     if (menuItem) {
       setCurrentMenuItem(menuItem);
       setIsEditing(true);
+      setImagePreview(menuItem.imageUrl || null);
     } else {
       setCurrentMenuItem({
         name: '',
@@ -95,6 +99,7 @@ export const MenuItemCrud: React.FC = () => {
         rating: 0
       });
       setIsEditing(false);
+      setImagePreview(null);
     }
     setIsDialogOpen(true);
   };
@@ -102,6 +107,7 @@ export const MenuItemCrud: React.FC = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCurrentMenuItem({});
+    setImagePreview(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -121,6 +127,73 @@ export const MenuItemCrud: React.FC = () => {
 
   const handleRestaurantChange = (value: string) => {
     setCurrentMenuItem({ ...currentMenuItem, restaurantId: value });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Por favor, envie uma imagem JPG, PNG ou WebP",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A imagem deve ter no máximo 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // Criar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload para o Supabase Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('menu-items')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('menu-items')
+        .getPublicUrl(filePath);
+
+      setCurrentMenuItem({ ...currentMenuItem, imageUrl: publicUrl });
+      setImagePreview(publicUrl);
+
+      toast({
+        title: "Imagem enviada",
+        description: "A imagem foi carregada com sucesso",
+      });
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível enviar a imagem",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const validateForm = () => {
@@ -395,13 +468,46 @@ export const MenuItemCrud: React.FC = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="imageUrl">URL da Imagem</Label>
-                <Input
-                  id="imageUrl"
-                  name="imageUrl"
-                  value={currentMenuItem.imageUrl || ''}
-                  onChange={handleInputChange}
-                />
+                <Label htmlFor="image">Imagem do Prato</Label>
+                <div className="space-y-2">
+                  {imagePreview && (
+                    <div className="relative w-full h-40 rounded-md overflow-hidden border">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <>Enviando...</>
+                      ) : (
+                        <>
+                          <Upload size={16} className="mr-2" />
+                          {imagePreview ? 'Trocar Imagem' : 'Enviar Imagem'}
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG ou WebP (máx. 5MB)
+                  </p>
+                </div>
               </div>
             </div>
           </div>
