@@ -20,110 +20,174 @@ export const Auth: React.FC = () => {
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/';
 
+  // Função para criar nova conta com verificação de email
   const handleSignUp = async (e: React.FormEvent) => {
+    // Prevenir comportamento padrão do formulário
     e.preventDefault();
     
+    // Validação: verificar se o email é válido
     if (!email || !email.includes('@')) {
       setError('Por favor, insira um email válido');
       return;
     }
 
+    // Validação: senha deve ter pelo menos 6 caracteres
     if (!password || password.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres');
       return;
     }
 
+    // Validação: nome não pode estar vazio
     if (!name || name.trim().length === 0) {
       setError('Por favor, insira seu nome');
       return;
     }
 
+    // Ativar estado de carregamento
     setLoading(true);
+    // Limpar mensagens de erro anteriores
     setError('');
 
     try {
+      // Criar nova conta no Supabase Auth
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+        email, // Email do usuário
+        password, // Senha do usuário
         options: {
+          // URL para onde o usuário será redirecionado após confirmar o email
           emailRedirectTo: `${window.location.origin}/`,
+          // Dados adicionais do usuário (salvos em user_metadata)
           data: {
-            name: name.trim()
+            name: name.trim() // Nome do usuário (remove espaços extras)
           }
         }
       });
 
+      // Se houver erro na criação da conta, lançar exceção
       if (signUpError) throw signUpError;
 
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Você será redirecionado em instantes.",
-      });
-      
-      // Aguardar um pouco para garantir que o perfil foi criado
-      setTimeout(() => {
-        navigate(from);
-      }, 1000);
+      // Verificar se o Supabase requer confirmação de email
+      // Se data.user existe mas session é null, significa que precisa confirmar email
+      if (data.user && !data.session) {
+        // Mostrar mensagem de sucesso com instrução para verificar email
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Verifique seu email para confirmar sua conta. Confira também a caixa de spam.",
+        });
+        // Limpar os campos do formulário
+        setEmail('');
+        setPassword('');
+        setName('');
+      } else {
+        // Se já está logado (confirmação de email desabilitada no Supabase)
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Você será redirecionado em instantes.",
+        });
+        
+        // Aguardar um pouco para garantir que o perfil foi criado no banco
+        setTimeout(() => {
+          // Redirecionar para a página de origem ou home
+          navigate(from);
+        }, 1000);
+      }
     } catch (error: any) {
+      // Log do erro no console para debugging
       console.error('Erro ao criar conta:', error);
+      
+      // Definir mensagem de erro amigável
       setError(error.message || 'Erro ao criar conta. Tente novamente.');
+      
+      // Mostrar toast com erro
       toast({
         title: "Erro ao criar conta",
         description: error.message || 'Tente novamente em alguns instantes.',
         variant: "destructive",
       });
     } finally {
+      // Desativar estado de carregamento
       setLoading(false);
     }
   };
 
+  // Função para fazer login com verificação de email confirmado
   const handleSignIn = async (e: React.FormEvent) => {
+    // Prevenir comportamento padrão do formulário
     e.preventDefault();
     
+    // Validação: verificar se o email é válido
     if (!email || !email.includes('@')) {
       setError('Por favor, insira um email válido');
       return;
     }
 
+    // Validação: senha não pode estar vazia
     if (!password) {
       setError('Por favor, insira sua senha');
       return;
     }
 
+    // Ativar estado de carregamento
     setLoading(true);
+    // Limpar mensagens de erro anteriores
     setError('');
 
     try {
+      // Tentar fazer login com email e senha
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email, // Email do usuário
+        password, // Senha do usuário
       });
 
+      // Se houver erro no login, lançar exceção
       if (signInError) throw signInError;
 
+      // Verificar se o email foi confirmado
+      if (data.user && !data.user.email_confirmed_at) {
+        // Se o email não foi confirmado, fazer logout e mostrar erro
+        await supabase.auth.signOut();
+        setError('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+        toast({
+          title: "Email não confirmado",
+          description: "Por favor, verifique seu email e confirme sua conta antes de fazer login.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Login bem-sucedido e email confirmado
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
       
+      // Redirecionar para a página de origem ou home
       navigate(from);
     } catch (error: any) {
+      // Log do erro no console para debugging
       console.error('Erro ao fazer login:', error);
       
+      // Definir mensagem de erro apropriada
       if (error.message.includes('Invalid login credentials')) {
         setError('Email ou senha incorretos');
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Por favor, confirme seu email antes de fazer login');
       } else {
         setError(error.message || 'Erro ao fazer login. Tente novamente.');
       }
       
+      // Mostrar toast com erro
       toast({
         title: "Erro no login",
         description: error.message.includes('Invalid login credentials') 
           ? 'Email ou senha incorretos' 
+          : error.message.includes('Email not confirmed')
+          ? 'Confirme seu email antes de fazer login'
           : 'Tente novamente.',
         variant: "destructive",
       });
     } finally {
+      // Desativar estado de carregamento
       setLoading(false);
     }
   };

@@ -53,11 +53,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Este listener é chamado sempre que o usuário faz login, logout, etc.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        // Atualiza o estado da sessão
-        setSession(session);
-        
-        // Atualiza o estado do usuário (extrai de session ou define como null)
-        setUser(session?.user ?? null);
+        // Verificar se o usuário tem email confirmado
+        if (session?.user && !session.user.email_confirmed_at) {
+          // Se o email não foi confirmado, fazer logout automaticamente
+          console.log('Email não confirmado, fazendo logout...');
+          supabase.auth.signOut();
+          // Limpar sessão e usuário
+          setSession(null);
+          setUser(null);
+        } else {
+          // Atualiza o estado da sessão
+          setSession(session);
+          // Atualiza o estado do usuário (extrai de session ou define como null)
+          setUser(session?.user ?? null);
+        }
         
         // Marca o carregamento como concluído
         setLoading(false);
@@ -66,11 +75,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Verifica se já existe uma sessão ativa ao carregar a aplicação
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Atualiza o estado da sessão
-      setSession(session);
-      
-      // Atualiza o estado do usuário
-      setUser(session?.user ?? null);
+      // Verificar se o usuário tem email confirmado
+      if (session?.user && !session.user.email_confirmed_at) {
+        // Se o email não foi confirmado, fazer logout automaticamente
+        console.log('Email não confirmado, fazendo logout...');
+        supabase.auth.signOut();
+        // Limpar sessão e usuário
+        setSession(null);
+        setUser(null);
+      } else {
+        // Atualiza o estado da sessão
+        setSession(session);
+        // Atualiza o estado do usuário
+        setUser(session?.user ?? null);
+      }
       
       // Marca o carregamento como concluído
       setLoading(false);
