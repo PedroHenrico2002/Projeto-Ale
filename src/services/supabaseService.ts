@@ -568,5 +568,28 @@ export const profileService = {
     
     if (error) throw error;         // Lança erro se houver falha
     return data;                    // Retorna o perfil atualizado
+  },
+
+  /**
+   * Exclui a conta de um usuário completamente do sistema
+   * Chama a edge function que tem permissões de admin para excluir o usuário
+   */
+  async deleteAccount() {
+    // Obtém o token de autenticação atual
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    // Chama a edge function para excluir a conta
+    const { data, error } = await supabase.functions.invoke('delete-user-account', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (error) throw error; // Lança erro se houver falha
+    return data; // Retorna a resposta da função
   }
 };

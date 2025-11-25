@@ -12,18 +12,32 @@ import { toast } from '@/hooks/use-toast';
 import { profileService, orderService } from '@/services/supabaseService';
 import { UserAddresses } from '@/components/profile/UserAddresses';
 import { UserPaymentMethods } from '@/components/profile/UserPaymentMethods';
-import { Navigate } from 'react-router-dom';
-import { ShoppingBag, Heart } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ShoppingBag, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 export const Profile: React.FC = () => {
   const {
     user,
     loading,
     signOut
   } = useAuth();
+  const navigate = useNavigate(); // Hook para navegação após exclusão
   const [profile, setProfile] = useState<any>(null);
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false); // Estado para controlar exclusão
   const [orders, setOrders] = useState([]);
   useEffect(() => {
     if (user) {
@@ -73,6 +87,40 @@ export const Profile: React.FC = () => {
     }
     setUpdating(false);
   };
+
+  /**
+   * Exclui a conta do usuário do sistema
+   * Remove todos os dados do perfil e da autenticação
+   */
+  const handleDeleteAccount = async () => {
+    if (!user) return; // Verifica se há usuário logado
+    
+    setDeleting(true); // Ativa estado de carregamento
+    
+    try {
+      // Chama o serviço para excluir a conta do Supabase
+      await profileService.deleteAccount();
+      
+      // Mostra mensagem de sucesso
+      toast({
+        title: "Conta excluída!",
+        description: "Sua conta foi removida permanentemente do sistema."
+      });
+      
+      // Faz logout e redireciona para a página inicial
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      // Mostra mensagem de erro
+      toast({
+        title: "Erro ao excluir conta",
+        description: "Não foi possível excluir sua conta. Tente novamente.",
+        variant: "destructive"
+      });
+      setDeleting(false); // Desativa estado de carregamento em caso de erro
+    }
+  };
+
   if (loading) {
     return <Layout>
         <div className="min-h-screen flex items-center justify-center">
@@ -129,16 +177,66 @@ export const Profile: React.FC = () => {
 
                 <Separator className="my-6" />
 
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold">Conta Sincronizada</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Todos os seus dados estão integrados com o Supabase
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold">Conta Sincronizada</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Todos os seus dados estão integrados com o Supabase
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={signOut}>
+                      Sair da Conta
+                    </Button>
                   </div>
-                  <Button variant="destructive" onClick={signOut}>
-                    Sair da Conta
-                  </Button>
+
+                  <Separator />
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-semibold text-destructive">Zona de Perigo</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Exclua permanentemente sua conta e todos os dados associados
+                      </p>
+                    </div>
+                    
+                    {/* Diálogo de confirmação para excluir conta */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={deleting}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {deleting ? 'Excluindo...' : 'Excluir Conta'}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Tem certeza absoluta?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso irá excluir permanentemente sua conta
+                            e remover todos os seus dados dos nossos servidores no Supabase, incluindo:
+                            <ul className="list-disc list-inside mt-2 space-y-1">
+                              <li>Perfil e informações pessoais</li>
+                              <li>Histórico de pedidos</li>
+                              <li>Endereços salvos</li>
+                              <li>Métodos de pagamento</li>
+                            </ul>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteAccount}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Sim, excluir minha conta
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
